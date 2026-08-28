@@ -61,4 +61,10 @@ public class Business : BaseEntity, IAuditableEntity
 
     // Staff members of the business.
     public ICollection<BusinessStaff> Staff { get; set; } = new List<BusinessStaff>();
+
+    public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+    public ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
+    public ICollection<VerificationRequest> VerificationRequests { get; set; } = new List<VerificationRequest>();
 }

@@ -72,6 +72,8 @@ public class Listing : BaseEntity, IAuditableEntity
     // Property-specific details.
     public PropertyDetails? PropertyDetails { get; set; }
 
+        public ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
+
     // Vehicle-specific details.
     public VehicleDetails? VehicleDetails { get; set; }
 
