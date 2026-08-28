@@ -16,4 +16,7 @@ public class Role : BaseEntity
 
     // Permissions assigned to this role.
     public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
+    public ICollection<User> Users { get; set; } = new List<User>();
+    public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
 }

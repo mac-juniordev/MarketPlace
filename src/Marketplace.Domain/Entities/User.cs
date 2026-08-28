@@ -42,7 +42,9 @@ public class User : BaseEntity, IAuditableEntity
     public Guid? UpdatedBy { get; set; }
 
     // Roles assigned to the user.
-    public ICollection<UserRole> Roles { get; set; } = new List<UserRole>();
+   public ICollection<Role> Roles { get; set; } = new List<Role>();
+
+   public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
     // Businesses owned or managed by the user.
     public ICollection<Business> Businesses { get; set; } = new List<Business>();
