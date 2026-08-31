@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Hangfire;
 using Hangfire.PostgreSql;
+using AspNetCoreRateLimit;
 using System.Text;
 
 // Create the application builder
@@ -105,6 +106,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure rate limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(
+    builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddInMemoryRateLimiting();
+
 // Build the application
 var app = builder.Build();
 
@@ -124,6 +132,9 @@ app.UseHangfireDashboard();
 
 // Redirect HTTP to HTTPS
 app.UseHttpsRedirection();
+
+// Enable rate limiting
+app.UseIpRateLimiting();
 
 // Enable CORS
 app.UseCors("AllowFrontend");
