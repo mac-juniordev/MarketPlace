@@ -37,6 +37,7 @@ builder.Services.AddHangfire(config =>
     config.UsePostgreSqlStorage(options =>
         options.UseNpgsqlConnection(
             builder.Configuration.GetConnectionString("DefaultConnection"))));
+
 // Register Hangfire server
 // This runs the background jobs
 builder.Services.AddHangfireServer();
@@ -91,6 +92,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Register authorization
 builder.Services.AddAuthorization();
 
+// Configure CORS
+// Allow requests from the React frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Build the application
 var app = builder.Build();
 
@@ -110,6 +124,9 @@ app.UseHangfireDashboard();
 
 // Redirect HTTP to HTTPS
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowFrontend");
 
 // Enable authentication
 app.UseAuthentication();
