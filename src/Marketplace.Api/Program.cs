@@ -34,9 +34,9 @@ builder.Services.AddDbContext<MarketplaceDbContext>(options =>
 // Configure Hangfire with PostgreSQL storage
 // Jobs are stored in the database and survive application restarts
 builder.Services.AddHangfire(config =>
-    config.UsePostgreSqlStorage(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
-
+    config.UsePostgreSqlStorage(options =>
+        options.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString("DefaultConnection"))));
 // Register Hangfire server
 // This runs the background jobs
 builder.Services.AddHangfireServer();
