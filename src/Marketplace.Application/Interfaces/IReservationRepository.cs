@@ -10,4 +10,6 @@ public interface IReservationRepository
     Task<IEnumerable<Reservation>> GetActiveByListingIdAsync(Guid listingId);
     Task<Reservation> CreateAsync(Reservation reservation);
     Task UpdateAsync(Reservation reservation);
+    Task<bool> HasActiveReservationAsync(Guid listingId, Guid userId);
+    Task<Reservation> CreateWithLockAsync(Guid userId, Guid listingId);
 }
