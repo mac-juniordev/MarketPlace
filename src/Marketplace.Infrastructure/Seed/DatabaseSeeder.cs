@@ -1,28 +1,24 @@
-// Import entities from Domain
 using Marketplace.Domain.Entities;
-// Import enums
-using Marketplace.Domain.Enums;
-// Import DbContext
 using Marketplace.Infrastructure.Data;
-// Import EF Core
 using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Infrastructure.Seed;
 
-// Static class: cannot be instantiated, only holds methods
 public static class DatabaseSeeder
 {
-    // Method to seed the database
-    // Takes the DbContext as parameter
     public static async Task SeedAsync(MarketplaceDbContext context)
     {
-        // Apply any pending migrations first
-        await context.Database.MigrateAsync();
+        // Check if database is relational (PostgreSQL)
+        // InMemory databases do not support migrations
+        if (context.Database.IsRelational())
+        {
+            // Apply pending migrations
+            await context.Database.MigrateAsync();
+        }
 
         // Seed roles if none exist
         if (!await context.Roles.AnyAsync())
         {
-            // Create roles
             var roles = new List<Role>
             {
                 new Role { Name = "Customer", Description = "Regular buyer" },
@@ -31,7 +27,6 @@ public static class DatabaseSeeder
                 new Role { Name = "SuperAdmin", Description = "Platform super administrator" }
             };
 
-            // Add all roles to database
             await context.Roles.AddRangeAsync(roles);
             await context.SaveChangesAsync();
         }
@@ -39,7 +34,6 @@ public static class DatabaseSeeder
         // Seed categories if none exist
         if (!await context.Categories.AnyAsync())
         {
-            // Create top-level categories
             var categories = new List<Category>
             {
                 new Category { Name = "Clothes", Slug = "clothes", Description = "Clothing and fashion" },
@@ -54,7 +48,6 @@ public static class DatabaseSeeder
                 new Category { Name = "Services", Slug = "services", Description = "Professional services" }
             };
 
-            // Add categories
             await context.Categories.AddRangeAsync(categories);
             await context.SaveChangesAsync();
         }
