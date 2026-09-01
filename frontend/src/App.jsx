@@ -1,32 +1,78 @@
-// Import router
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-// Import auth provider
+
 import { AuthProvider } from './context/AuthContext';
-// Import components
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-// Import pages
+
 import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import ListingDetail from './pages/ListingDetail';
 
-// Main App component
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminSellers from './pages/AdminSellers';
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/search" element={<SearchResults />} />
-              <Route path="/listing/:id" element={<ListingDetail />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
+        <Routes>
+
+          {/* =================================================
+              CUSTOMER ROUTES
+          ================================================= */}
+          <Route path="/" element={<CustomerLayout />} />
+
+          {/* =================================================
+              ADMIN ROUTES
+          ================================================= */}
+          <Route
+            path="/control"
+            element={<AdminLogin />}
+          />
+
+          <Route
+            path="/control/dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="/control/sellers"
+            element={<AdminSellers />}
+          />
+
+        </Routes>
       </AuthProvider>
     </BrowserRouter>
+  );
+}
+
+function CustomerLayout() {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+
+      <main className="flex-1">
+        <Routes>
+          <Route
+            path="/"
+            element={<Home />}
+          />
+
+          <Route
+            path="/search"
+            element={<SearchResults />}
+          />
+
+          <Route
+            path="/listing/:id"
+            element={<ListingDetail />}
+          />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

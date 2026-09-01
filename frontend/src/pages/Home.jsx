@@ -1,17 +1,9 @@
-// Import React hooks
 import { useEffect, useState } from 'react';
-
-// Import motion
 import { motion } from 'framer-motion';
-
-// Import API
 import { listingApi, categoryApi } from '../services/api';
-
-// Import components
 import ListingCard from '../components/ListingCard';
 import LoadingScreen from '../components/LoadingScreen';
 
-// Home page
 export default function Home() {
   const [featuredListings, setFeaturedListings] = useState([]);
   const [recentListings, setRecentListings] = useState([]);
@@ -49,270 +41,441 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8f7f3] text-gray-900">
 
-      {/* ==================== HERO SECTION ==================== */}
-      <section className="relative h-[500px] w-full overflow-hidden">
+      {/* =========================================================
+          HERO
+      ========================================================= */}
+      <section className="relative isolate min-h-[560px] overflow-hidden sm:min-h-[620px]">
 
-        {/* Hero image */}
+        {/* Full hero image */}
         <img
           src="/hero.jpg"
-          alt="African market"
-          className="absolute inset-0 w-full h-full object-cover"
+          alt="African marketplace"
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
           onError={(e) => {
             console.error('Hero image failed to load:', e.target.src);
           }}
         />
 
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 -z-10 bg-black/50" />
+
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
+
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-black/45 to-transparent" />
 
         {/* Hero content */}
-        <div className="relative z-10 h-full flex items-center justify-center">
-          <div className="text-center px-4 max-w-4xl mx-auto">
+        <div className="mx-auto flex min-h-[560px] max-w-7xl items-center px-5 py-20 sm:min-h-[620px] sm:px-8 lg:px-10">
 
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-4xl md:text-6xl font-bold text-white leading-tight"
-            >
-              Your Market, Now Online
-            </motion.h1>
+          <div className="max-w-3xl">
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-4 text-lg md:text-xl text-gray-200"
-            >
-              Discover local products, property, vehicles, and services
-            </motion.p>
-
+            {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-8 flex justify-center"
+              transition={{ duration: 0.5 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-md"
+            >
+              <span className="h-2 w-2 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
+              Discover what&apos;s available near you
+            </motion.div>
+
+            {/* Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="max-w-3xl text-5xl font-black leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl"
+            >
+              Your marketplace.
+              <br />
+              <span className="text-yellow-400">
+                Now Online.
+              </span>
+            </motion.h1>
+
+            {/* Description */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              className="mt-6 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl"
+            >
+              Discover products, vehicles, property and services
+              from trusted local listings.
+            </motion.p>
+
+            {/* CTA buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="mt-9 flex flex-col gap-3 sm:flex-row"
             >
               <a
                 href="/search"
-                className="px-8 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors shadow-lg"
+                className="inline-flex items-center justify-center rounded-xl bg-yellow-400 px-8 py-4 font-bold text-gray-950 shadow-xl shadow-black/20 transition-all duration-200 hover:-translate-y-1 hover:bg-yellow-300"
               >
                 Browse Listings
+                <span className="ml-2 text-lg">→</span>
               </a>
+
+              <a
+                href="#categories"
+                className="inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/10 px-8 py-4 font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/20"
+              >
+                Explore Categories
+              </a>
+            </motion.div>
+
+            {/* Trust indicators */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/75"
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-yellow-400">✓</span>
+                Trusted listings
+              </span>
+
+              <span className="flex items-center gap-2">
+                <span className="text-yellow-400">✓</span>
+                Local marketplace
+              </span>
+
+              <span className="flex items-center gap-2">
+                <span className="text-yellow-400">✓</span>
+                Easy reservations
+              </span>
             </motion.div>
 
           </div>
         </div>
       </section>
 
-      {/* ==================== STATS BAR ==================== */}
-      <section className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-3 gap-8 text-center">
+      {/* =========================================================
+          QUICK STATS
+      ========================================================= */}
+      <section className="border-b border-gray-200 bg-white">
+        <div className="mx-auto grid max-w-7xl grid-cols-3 divide-x divide-gray-200 px-5 py-7 sm:px-8 lg:px-10">
 
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {featuredListings.length + recentListings.length}+
-              </p>
-              <p className="text-sm text-gray-500">
-                Listings
-              </p>
-            </div>
+          <div className="text-center">
+            <p className="text-2xl font-black text-[#103c2d] sm:text-3xl">
+              {recentListings.length}+
+            </p>
 
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {categories.length}
-              </p>
-              <p className="text-sm text-gray-500">
-                Categories
-              </p>
-            </div>
-
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                60
-              </p>
-              <p className="text-sm text-gray-500">
-                Min Reservation
-              </p>
-            </div>
-
+            <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
+              Listings
+            </p>
           </div>
+
+          <div className="text-center">
+            <p className="text-2xl font-black text-[#103c2d] sm:text-3xl">
+              {categories.length}
+            </p>
+
+            <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
+              Categories
+            </p>
+          </div>
+
+          <div className="text-center">
+            <p className="text-2xl font-black text-[#103c2d] sm:text-3xl">
+              60
+            </p>
+
+            <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
+              Min reservation
+            </p>
+          </div>
+
         </div>
       </section>
 
-      {/* ==================== CATEGORIES ==================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+      {/* =========================================================
+          CATEGORIES
+      ========================================================= */}
+      <section
+        id="categories"
+        className="mx-auto max-w-7xl px-5 pt-16 sm:px-8 lg:px-10"
+      >
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Shop by Category
-          </h2>
+        <div className="mb-7 flex items-end justify-between">
+
+          <div>
+            <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">
+              Explore
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
+              What are you looking for?
+            </h2>
+          </div>
+
+          <a
+            href="/search"
+            className="hidden text-sm font-bold text-emerald-700 transition hover:text-emerald-900 sm:block"
+          >
+            View all →
+          </a>
+
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
 
           {categories.slice(0, 10).map((category, index) => (
             <motion.a
               key={category.id}
               href={`/search?category=${category.id}`}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
-                duration: 0.3,
-                delay: index * 0.05,
+                duration: 0.35,
+                delay: index * 0.04,
               }}
-              whileHover={{ y: -4 }}
-              className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:border-green-500 hover:shadow-md transition-all"
+              whileHover={{ y: -5 }}
+              className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-emerald-200 hover:shadow-lg"
             >
-              <span className="font-medium text-gray-900">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-lg font-black text-emerald-700 transition-colors group-hover:bg-emerald-700 group-hover:text-white">
+                {category.name?.charAt(0)?.toUpperCase()}
+              </div>
+
+              <p className="font-bold text-gray-900">
                 {category.name}
-              </span>
+              </p>
+
+              <p className="mt-1 text-xs text-gray-400">
+                Explore →
+              </p>
             </motion.a>
           ))}
 
         </div>
 
         {categories.length === 0 && (
-          <p className="text-gray-500 mt-6 text-center">
-            No categories available.
-          </p>
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-14 text-center">
+            <p className="font-semibold text-gray-700">
+              No categories available.
+            </p>
+          </div>
         )}
 
       </section>
 
-      {/* ==================== FEATURED LISTINGS ==================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+      {/* =========================================================
+          FEATURED LISTINGS
+      ========================================================= */}
+      <section className="mx-auto max-w-7xl px-5 pt-20 sm:px-8 lg:px-10">
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Featured Listings
-          </h2>
+        <div className="mb-7 flex items-end justify-between">
+
+          <div>
+            <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">
+              Handpicked for you
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
+              Featured listings
+            </h2>
+          </div>
 
           <a
             href="/search"
-            className="text-sm text-green-600 hover:text-green-700 font-medium"
+            className="text-sm font-bold text-emerald-700 transition hover:text-emerald-900"
           >
-            View All
+            See everything →
           </a>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
-
-          {featuredListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-            />
-          ))}
 
         </div>
 
-        {featuredListings.length === 0 && (
-          <p className="text-gray-500 mt-6 text-center">
-            No featured listings yet.
-          </p>
+        {featuredListings.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
+            <p className="font-semibold text-gray-700">
+              No featured listings yet.
+            </p>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Check back soon for new listings.
+            </p>
+          </div>
         )}
 
       </section>
 
-      {/* ==================== RECENTLY ADDED ==================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+      {/* =========================================================
+          RESERVATION BANNER
+      ========================================================= */}
+      <section className="mx-auto max-w-7xl px-5 pt-20 sm:px-8 lg:px-10">
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Recently Added
-          </h2>
+        <div className="relative overflow-hidden rounded-[2rem] bg-[#103c2d] px-7 py-12 sm:px-12">
 
-          <a
-            href="/search"
-            className="text-sm text-green-600 hover:text-green-700 font-medium"
-          >
-            View All
-          </a>
-        </div>
+          {/* Decorative circles */}
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-yellow-400/10 blur-2xl" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-emerald-400/10 blur-2xl" />
 
-          {recentListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-            />
-          ))}
+          <div className="relative flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
 
-        </div>
+            <div className="max-w-2xl">
 
-        {recentListings.length === 0 && (
-          <p className="text-gray-500 mt-6 text-center">
-            No listings yet.
-          </p>
-        )}
+              <p className="text-sm font-bold uppercase tracking-widest text-yellow-400">
+                Found something you like?
+              </p>
 
-      </section>
+              <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                Reserve it before someone else does.
+              </h2>
 
-      {/* ==================== TRUST BADGES ==================== */}
-      <section className="bg-white border-t border-gray-200 mt-16 py-16">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-
-            {/* Verified Sellers */}
-            <div>
-
-              <div className="w-12 h-12 mx-auto bg-green-50 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-xl font-bold">
-                  V
-                </span>
-              </div>
-
-              <h3 className="font-semibold text-gray-900 mt-4">
-                Verified Sellers
-              </h3>
-
-              <p className="text-sm text-gray-500 mt-2">
-                Trust signals on every listing
+              <p className="mt-3 text-emerald-50/70">
+                Browse available listings, choose what you want,
+                and reserve it for up to 60 minutes.
               </p>
 
             </div>
 
-            {/* Local First */}
-            <div>
+            <a
+              href="/search"
+              className="shrink-0 rounded-xl bg-yellow-400 px-7 py-4 text-center font-bold text-gray-950 shadow-lg transition-all hover:-translate-y-1 hover:bg-yellow-300"
+            >
+              Find something →
+            </a>
 
-              <div className="w-12 h-12 mx-auto bg-green-50 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-xl font-bold">
-                  L
-                </span>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* =========================================================
+          RECENTLY ADDED
+      ========================================================= */}
+      <section className="mx-auto max-w-7xl px-5 pb-20 pt-20 sm:px-8 lg:px-10">
+
+        <div className="mb-7 flex items-end justify-between">
+
+          <div>
+            <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">
+              Fresh on the marketplace
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
+              Recently added
+            </h2>
+          </div>
+
+          <a
+            href="/search"
+            className="text-sm font-bold text-emerald-700 transition hover:text-emerald-900"
+          >
+            View all →
+          </a>
+
+        </div>
+
+        {recentListings.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {recentListings.slice(0, 8).map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
+            <p className="font-semibold text-gray-700">
+              No listings yet.
+            </p>
+          </div>
+        )}
+
+      </section>
+
+      {/* =========================================================
+          TRUST SECTION
+      ========================================================= */}
+      <section className="border-t border-gray-200 bg-white">
+
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+
+          <div className="mb-10 text-center">
+
+            <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">
+              Shop with confidence
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black text-gray-900 sm:text-4xl">
+              A marketplace built around you
+            </h2>
+
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+
+            {/* Verified listings */}
+            <div className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md">
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-xl font-bold text-emerald-700">
+                ✓
               </div>
 
-              <h3 className="font-semibold text-gray-900 mt-4">
-                Local First
+              <h3 className="mt-5 text-lg font-black text-gray-900">
+                Trusted listings
               </h3>
 
-              <p className="text-sm text-gray-500 mt-2">
-                Built for Cameroonian commerce
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Find listings with useful information and trust
+                signals to help you decide.
               </p>
 
             </div>
 
-            {/* Reserve Safely */}
-            <div>
+            {/* Local marketplace */}
+            <div className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md">
 
-              <div className="w-12 h-12 mx-auto bg-green-50 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-xl font-bold">
-                  R
-                </span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-xl font-bold text-yellow-700">
+                ◎
               </div>
 
-              <h3 className="font-semibold text-gray-900 mt-4">
-                Reserve Safely
+              <h3 className="mt-5 text-lg font-black text-gray-900">
+                Local marketplace
               </h3>
 
-              <p className="text-sm text-gray-500 mt-2">
-                Hold items for 60 minutes
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Discover products, property, vehicles and services
+                available around Cameroon.
+              </p>
+
+            </div>
+
+            {/* Reservations */}
+            <div className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md">
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-xl font-bold text-orange-700">
+                ⏱
+              </div>
+
+              <h3 className="mt-5 text-lg font-black text-gray-900">
+                Easy reservations
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Found something you want? Reserve it for 60 minutes
+                while you arrange the next step.
               </p>
 
             </div>

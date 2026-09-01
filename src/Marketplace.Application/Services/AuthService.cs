@@ -1,17 +1,24 @@
+// Import DTOs
 using Marketplace.Application.DTOs.Auth;
 using Marketplace.Application.DTOs.User;
+// Import exceptions
 using Marketplace.Application.Exceptions;
+// Import interfaces
 using Marketplace.Application.Interfaces;
+// Import entities
 using Marketplace.Domain.Entities;
 
 namespace Marketplace.Application.Services;
 
+// Service for authentication
 public class AuthService
 {
+    // Dependencies
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
 
+    // Constructor injection
     public AuthService(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
@@ -22,6 +29,7 @@ public class AuthService
         _jwtService = jwtService;
     }
 
+    // Register a new user
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         // Check if email already exists
@@ -45,7 +53,7 @@ public class AuthService
         // Save user
         var created = await _userRepository.CreateAsync(user);
 
-        // Generate token
+        // Generate token with Customer role
         var token = _jwtService.GenerateToken(created, new List<string> { "Customer" });
 
         return new AuthResponse
@@ -56,6 +64,7 @@ public class AuthService
         };
     }
 
+    // Login a user
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
         // Find user by email
@@ -76,8 +85,15 @@ public class AuthService
         user.LastLoginAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user);
 
-        // Generate token
-        var token = _jwtService.GenerateToken(user, new List<string> { "Customer" });
+        // Get user roles from database
+        var roles = await _userRepository.GetUserRolesAsync(user.Id);
+
+        // If no roles, default to Customer
+        if (!roles.Any())
+            roles = new List<string> { "Customer" };
+
+        // Generate token with actual roles
+        var token = _jwtService.GenerateToken(user, roles);
 
         return new AuthResponse
         {
@@ -87,6 +103,7 @@ public class AuthService
         };
     }
 
+    // Map entity to DTO
     private UserDto MapToDto(User user)
     {
         return new UserDto

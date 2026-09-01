@@ -65,4 +65,12 @@ export const userApi = {
   updateProfile: (data) => api.put('/users/me', data),
 };
 
+export const adminApi = {
+  getStats: () => api.get('/admin/stats'),
+  getSellers: () => api.get('/admin/sellers'),
+  createSeller: (data) => api.post('/admin/sellers', data),
+  suspendSeller: (id) => api.post(`/admin/sellers/${id}/suspend`),
+  deleteSeller: (id) => api.delete(`/admin/sellers/${id}`),
+};
+
 export default api;
