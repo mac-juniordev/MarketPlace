@@ -18,17 +18,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Export API methods
+// Auth API
 export const authApi = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
 };
 
+// Listing API
 export const listingApi = {
   getAll: () => api.get('/listings'),
   getById: (id) => api.get(`/listings/${id}`),
   search: (query, page, pageSize) => api.get('/listings/search', { params: { query, page, pageSize } }),
   getFeatured: (count) => api.get('/listings/featured', { params: { count } }),
+  getHot: (count) => api.get('/listings/hot', { params: { count } }),
   getByCategory: (categoryId) => api.get(`/listings/category/${categoryId}`),
   getByBusiness: (businessId) => api.get(`/listings/business/${businessId}`),
   create: (data) => api.post('/listings', data),
@@ -36,12 +38,14 @@ export const listingApi = {
   delete: (id) => api.delete(`/listings/${id}`),
 };
 
+// Category API
 export const categoryApi = {
   getAll: () => api.get('/categories'),
   getById: (id) => api.get(`/categories/${id}`),
   getBySlug: (slug) => api.get(`/categories/slug/${slug}`),
 };
 
+// Business API
 export const businessApi = {
   create: (data) => api.post('/businesses', data),
   getById: (id) => api.get(`/businesses/${id}`),
@@ -49,28 +53,54 @@ export const businessApi = {
   update: (id, data) => api.put(`/businesses/${id}`, data),
 };
 
+// Reservation API
 export const reservationApi = {
   create: (data) => api.post('/reservations', data),
   getMyReservations: () => api.get('/reservations/my'),
+  getByListing: (listingId) => api.get(`/reservations/listing/${listingId}`),
   cancel: (id) => api.post(`/reservations/${id}/cancel`),
 };
 
+// Review API
 export const reviewApi = {
   getByListing: (listingId) => api.get(`/reviews/listing/${listingId}`),
+  getByUser: (userId) => api.get(`/reviews/user/${userId}`),
   create: (data) => api.post('/reviews', data),
 };
 
+// Report API
+export const reportApi = {
+  create: (data) => api.post('/reports', data),
+};
+
+// User API
 export const userApi = {
   getMe: () => api.get('/users/me'),
   updateProfile: (data) => api.put('/users/me', data),
 };
 
+// Notification API
+export const notificationApi = {
+  getMyNotifications: (unreadOnly = false) => api.get('/notifications', { params: { unreadOnly } }),
+  markAsRead: (id) => api.post(`/notifications/${id}/read`),
+};
+
+// Admin API
 export const adminApi = {
   getStats: () => api.get('/admin/stats'),
   getSellers: () => api.get('/admin/sellers'),
   createSeller: (data) => api.post('/admin/sellers', data),
   suspendSeller: (id) => api.post(`/admin/sellers/${id}/suspend`),
   deleteSeller: (id) => api.delete(`/admin/sellers/${id}`),
+};
+
+// Upload API
+export const uploadApi = {
+  uploadImage: (formData) => api.post('/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
 };
 
 export default api;

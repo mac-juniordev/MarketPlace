@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 // Import motion
 import { motion } from 'framer-motion';
 // Import router
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 // Import dayjs
 import dayjs from 'dayjs';
 // Import API
-import { categoryApi, businessApi, listingApi } from '../services/api';
+import { categoryApi, listingApi } from '../services/api';
 // Import components
 import ImageUpload from '../components/ImageUpload';
 // Import icons
@@ -21,37 +21,32 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Plus,
-  MapPin,
-  Store,
+  Save,
 } from 'lucide-react';
 
-// Seller create listing page
-export default function SellerCreateListing() {
+// Seller edit listing page
+export default function SellerEditListing() {
   // Navigation hook
   const navigate = useNavigate();
+  // Get listing ID from URL
+  const { id } = useParams();
 
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(dayjs());
   const [categories, setCategories] = useState([]);
-  const [businessId, setBusinessId] = useState(null);
   const [images, setImages] = useState([]);
-  const [locationType, setLocationType] = useState('fixed');
   const [form, setForm] = useState({
     title: '',
     description: '',
     price: '',
     type: 1,
     categoryId: '',
-    availableQuantity: 1,
-    isReservable: true,
-    city: '',
-    quarter: '',
-    address: '',
+    isAvailable: true,
   });
-  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   // Authentication check
   useEffect(() => {
@@ -61,27 +56,36 @@ export default function SellerCreateListing() {
     }
   }, [navigate]);
 
-  // Fetch categories and business
+  // Fetch listing and categories
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesResponse, businessResponse] = await Promise.all([
+        const [listingResponse, categoriesResponse] = await Promise.all([
+          listingApi.getById(id),
           categoryApi.getAll(),
-          businessApi.getMyBusinesses(),
         ]);
 
+        const listing = listingResponse.data;
+        setForm({
+          title: listing.title || '',
+          description: listing.description || '',
+          price: listing.price?.toString() || '',
+          type: listing.type || 1,
+          categoryId: listing.categoryId || '',
+          isAvailable: listing.isAvailable ?? true,
+        });
+        setImages(listing.images || []);
         setCategories(categoriesResponse.data);
-
-        if (businessResponse.data && businessResponse.data.length > 0) {
-          setBusinessId(businessResponse.data[0].id);
-        }
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        setError('Failed to load listing');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [id]);
 
   // Live clock
   useEffect(() => {
@@ -101,7 +105,7 @@ export default function SellerCreateListing() {
   // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setCreating(true);
+    setSaving(true);
     setError('');
 
     try {
@@ -109,21 +113,18 @@ export default function SellerCreateListing() {
         title: form.title,
         description: form.description,
         price: parseFloat(form.price),
-        type: form.type,
-        businessId: businessId,
+        status: form.isAvailable ? 1 : 3,
         categoryId: form.categoryId,
-        availableQuantity: form.availableQuantity,
-        isReservable: form.isReservable,
-        images: images,
+        isAvailable: form.isAvailable,
       };
 
-      await listingApi.create(payload);
+      await listingApi.update(id, payload);
       navigate('/studio/listings');
     } catch (err) {
-      console.error('Failed to create listing:', err);
-      setError(err.response?.data?.message || 'Failed to create listing');
+      console.error('Failed to update listing:', err);
+      setError(err.response?.data?.message || 'Failed to update listing');
     } finally {
-      setCreating(false);
+      setSaving(false);
     }
   };
 
@@ -136,6 +137,14 @@ export default function SellerCreateListing() {
     { label: 'Premium', path: '/studio/premium', icon: Settings },
     { label: 'Report Issue', path: '/studio/reports', icon: Settings },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-[#f8f7f3] items-center justify-center">
+        <img src="/favicon.svg" alt="Marketplace" className="w-12 h-12 animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[#f8f7f3]">
@@ -185,7 +194,6 @@ export default function SellerCreateListing() {
           <button
             type="button"
             onClick={() => navigate('/studio/profile')}
-            title={!sidebarOpen ? 'Profile Settings' : undefined}
             className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-white/75 transition-colors hover:bg-white/10 hover:text-white ${
               !sidebarOpen ? 'justify-center' : ''
             }`}
@@ -197,7 +205,6 @@ export default function SellerCreateListing() {
           <button
             type="button"
             onClick={handleLogout}
-            title={!sidebarOpen ? 'Sign Out' : undefined}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 ${
               !sidebarOpen ? 'justify-center' : ''
             }`}
@@ -212,7 +219,6 @@ export default function SellerCreateListing() {
       <button
         type="button"
         onClick={() => setSidebarOpen((prev) => !prev)}
-        aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         className={`fixed top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#103c2d] text-white shadow-lg transition-all duration-300 hover:bg-[#1a5c42] ${
           sidebarOpen ? 'left-[15rem]' : 'left-14'
         }`}
@@ -222,11 +228,10 @@ export default function SellerCreateListing() {
 
       {/* MAIN AREA */}
       <div className={`min-w-0 flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        {/* TOP HEADER */}
         <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
           <div className="flex items-center justify-between gap-6">
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold text-gray-900 sm:text-2xl">Create Listing</h1>
+            <div>
+              <h1 className="truncate text-xl font-bold text-gray-900 sm:text-2xl">Edit Listing</h1>
               <p className="mt-1 text-sm text-gray-500">
                 {currentTime.format('dddd, DD MMMM YYYY')}
               </p>
@@ -246,14 +251,10 @@ export default function SellerCreateListing() {
           </div>
         </header>
 
-        {/* CONTENT */}
         <main className="p-5 sm:p-8">
           <div className="mb-8">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Studio</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">New Listing</h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Add a new product to your marketplace business.
-            </p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">Edit Listing</h2>
           </div>
 
           {error && (
@@ -265,7 +266,6 @@ export default function SellerCreateListing() {
           <form onSubmit={handleSubmit} className="max-w-3xl">
             <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm">
               <div className="grid gap-5 sm:grid-cols-2">
-                {/* Title */}
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Title <span className="text-red-500">*</span>
@@ -275,12 +275,10 @@ export default function SellerCreateListing() {
                     required
                     value={form.title}
                     onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="Example: iPhone 13 Pro 128GB"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                 </div>
 
-                {/* Price */}
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Price (XAF) <span className="text-red-500">*</span>
@@ -292,12 +290,10 @@ export default function SellerCreateListing() {
                     step="0.01"
                     value={form.price}
                     onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
-                    placeholder="0.00"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                 </div>
 
-                {/* Category */}
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Category <span className="text-red-500">*</span>
@@ -317,122 +313,10 @@ export default function SellerCreateListing() {
                   </select>
                 </div>
 
-                {/* Listing Type */}
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                    Listing Type
-                  </label>
-                  <select
-                    value={form.type}
-                    onChange={(e) => setForm((prev) => ({ ...prev, type: parseInt(e.target.value) }))}
-                    className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                  >
-                    <option value={1}>Product</option>
-                    <option value={2}>Property</option>
-                    <option value={3}>Vehicle</option>
-                    <option value={4}>Service</option>
-                  </select>
-                </div>
-
-                {/* Available Quantity */}
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                    Available Quantity
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={form.availableQuantity}
-                    onChange={(e) => setForm((prev) => ({ ...prev, availableQuantity: parseInt(e.target.value) }))}
-                    className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                  />
-                </div>
-
-                {/* Location Type */}
-                <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                    Location Type
-                  </label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setLocationType('fixed')}
-                      className={`flex-1 h-12 rounded-xl border text-sm font-bold transition ${
-                        locationType === 'fixed'
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="flex items-center justify-center gap-2">
-                        <MapPin size={16} />
-                        Fixed Location
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLocationType('flexible')}
-                      className={`flex-1 h-12 rounded-xl border text-sm font-bold transition ${
-                        locationType === 'flexible'
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="flex items-center justify-center gap-2">
-                        <Store size={16} />
-                        WhatsApp / Delivery
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Location fields - only if fixed */}
-                {locationType === 'fixed' && (
-                  <>
-                    <div>
-                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={form.city}
-                        onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
-                        placeholder="Example: Douala"
-                        className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                        Quarter / Neighborhood
-                      </label>
-                      <input
-                        type="text"
-                        value={form.quarter}
-                        onChange={(e) => setForm((prev) => ({ ...prev, quarter: e.target.value }))}
-                        placeholder="Example: Bonapriso"
-                        className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        value={form.address}
-                        onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
-                        placeholder="Street address or landmark"
-                        className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Image Upload */}
                 <div className="sm:col-span-2">
                   <ImageUpload images={images} setImages={setImages} maxImages={5} />
                 </div>
 
-                {/* Description */}
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Description <span className="text-red-500">*</span>
@@ -442,22 +326,20 @@ export default function SellerCreateListing() {
                     value={form.description}
                     onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                     rows={6}
-                    placeholder="Describe your listing in detail..."
                     className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                 </div>
 
-                {/* Reservable checkbox */}
                 <div className="sm:col-span-2">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={form.isReservable}
-                      onChange={(e) => setForm((prev) => ({ ...prev, isReservable: e.target.checked }))}
+                      checked={form.isAvailable}
+                      onChange={(e) => setForm((prev) => ({ ...prev, isAvailable: e.target.checked }))}
                       className="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                     />
                     <span className="text-sm font-bold text-gray-700">
-                      Allow buyers to reserve this item
+                      Available for reservation
                     </span>
                   </label>
                 </div>
@@ -473,11 +355,11 @@ export default function SellerCreateListing() {
                 </button>
                 <button
                   type="submit"
-                  disabled={creating}
+                  disabled={saving}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#103c2d] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#174d3a] disabled:opacity-60"
                 >
-                  <Plus size={18} />
-                  {creating ? 'Creating...' : 'Create Listing'}
+                  <Save size={18} />
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </div>

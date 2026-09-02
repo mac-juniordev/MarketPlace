@@ -28,23 +28,19 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Register the database context
-// This tells EF Core to use PostgreSQL with our connection string
 builder.Services.AddDbContext<MarketplaceDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configure Hangfire with PostgreSQL storage
-// Jobs are stored in the database and survive application restarts
 builder.Services.AddHangfire(config =>
     config.UsePostgreSqlStorage(options =>
         options.UseNpgsqlConnection(
             builder.Configuration.GetConnectionString("DefaultConnection"))));
 
 // Register Hangfire server
-// This runs the background jobs
 builder.Services.AddHangfireServer();
 
 // Register repositories
-// Each interface is mapped to its implementation
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -69,6 +65,7 @@ builder.Services.AddScoped<ReportService>();
 // Register utilities
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<CloudinaryService>();
 
 // Register background job class
 builder.Services.AddScoped<ReservationExpiryJob>();
@@ -94,7 +91,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Configure CORS
-// Allow requests from the React frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -127,7 +123,6 @@ if (app.Environment.IsDevelopment())
 }
 
 // Enable Hangfire dashboard
-// Shows job history, failures, and retries
 app.UseHangfireDashboard();
 
 // Redirect HTTP to HTTPS
@@ -149,7 +144,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Seed the database
-// Creates initial roles and categories if they do not exist
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MarketplaceDbContext>();
@@ -159,10 +153,8 @@ using (var scope = app.Services.CreateScope())
 // Schedule the reservation expiry job
 using (var scope = app.Services.CreateScope())
 {
-    // Get the recurring job manager from Hangfire
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    // Schedule the job to run every minute
     recurringJobManager.AddOrUpdate(
         "expire-reservations",
         () => scope.ServiceProvider.GetRequiredService<ReservationExpiryJob>().ProcessExpiredReservationsAsync(),
