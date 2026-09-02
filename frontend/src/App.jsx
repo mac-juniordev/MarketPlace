@@ -12,6 +12,9 @@ import ListingDetail from './pages/ListingDetail';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSellers from './pages/AdminSellers';
+import AdminCategories from './pages/AdminCategories';
+import AdminReports from './pages/AdminReports';
+import AdminAuditLogs from './pages/AdminAuditLogs';
 
 export default function App() {
   return (
@@ -40,6 +43,21 @@ export default function App() {
           <Route
             path="/control/sellers"
             element={<AdminSellers />}
+          />
+
+          <Route
+            path="/control/categories"
+            element={<AdminCategories />}
+          />
+
+          <Route
+            path="/control/reports"
+            element={<AdminReports />}
+          />
+
+          <Route
+            path="/control/audit-logs"
+            element={<AdminAuditLogs />}
           />
 
         </Routes>
