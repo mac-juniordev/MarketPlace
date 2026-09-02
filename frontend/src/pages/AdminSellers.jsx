@@ -564,14 +564,14 @@ export default function AdminSellers() {
                         required
                         value={newSeller.firstName}
                         onChange={(value) => setNewSeller((prev) => ({ ...prev, firstName: value }))}
-                        placeholder="John"
+                        placeholder="Mac"
                       />
                       <FormField
                         label="Last name"
                         required
                         value={newSeller.lastName}
                         onChange={(value) => setNewSeller((prev) => ({ ...prev, lastName: value }))}
-                        placeholder="Doe"
+                        placeholder="Jnr"
                       />
                       <FormField
                         label="Email address"

@@ -1,0 +1,403 @@
+// Import React hooks
+import { useEffect, useMemo, useState } from 'react';
+// Import motion
+import { motion } from 'framer-motion';
+// Import router
+import { useNavigate } from 'react-router-dom';
+// Import dayjs
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+// Import API
+import { reservationApi, listingApi, businessApi } from '../services/api';
+// Import icons
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Star,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Search,
+  Phone,
+  Mail,
+  CheckCircle,
+  XCircle,
+  Timer,
+} from 'lucide-react';
+
+// Enable relative time
+dayjs.extend(relativeTime);
+
+// Seller reservations page
+export default function SellerReservations() {
+  // Navigation hook
+  const navigate = useNavigate();
+
+  // State
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentTime, setCurrentTime] = useState(dayjs());
+  const [reservations, setReservations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // Authentication check
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/studio', { replace: true });
+    }
+  }, [navigate]);
+
+  // Fetch reservations
+  useEffect(() => {
+    const fetchReservations = async () => {
+      try {
+        // Get business first
+        const businessResponse = await businessApi.getMyBusinesses();
+        if (businessResponse.data && businessResponse.data.length > 0) {
+          const biz = businessResponse.data[0];
+
+          // Get listings for this business
+          const listingsResponse = await listingApi.getByBusiness(biz.id);
+          const listings = listingsResponse.data;
+
+          // Get reservations for each listing
+          const allReservations = [];
+          for (const listing of listings) {
+            try {
+              const reservationsResponse = await reservationApi.getByListing(listing.id);
+              allReservations.push(...reservationsResponse.data.map((r) => ({
+                ...r,
+                listingTitle: listing.title,
+              })));
+            } catch (err) {
+              console.error('Failed to fetch reservations for listing:', err);
+            }
+          }
+
+          setReservations(allReservations);
+        }
+      } catch (error) {
+        console.error('Failed to fetch reservations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReservations();
+  }, []);
+
+  // Live clock
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(dayjs());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/studio', { replace: true });
+  };
+
+  // Search
+  const filteredReservations = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return reservations;
+
+    return reservations.filter((reservation) => {
+      const searchableText = [
+        reservation.listingTitle,
+        reservation.userName,
+        reservation.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return searchableText.includes(query);
+    });
+  }, [reservations, searchQuery]);
+
+  // Complete reservation
+  const handleComplete = async (reservationId) => {
+    try {
+      // This will use the backend endpoint when ready
+      setReservations((prev) =>
+        prev.map((r) =>
+          r.id === reservationId ? { ...r, status: 'Completed' } : r
+        )
+      );
+    } catch (error) {
+      console.error('Failed to complete reservation:', error);
+    }
+  };
+
+  // Navigation
+  const navItems = [
+    { label: 'Dashboard', path: '/studio/dashboard', icon: LayoutDashboard },
+    { label: 'My Listings', path: '/studio/listings', icon: Package },
+    { label: 'Reservations', path: '/studio/reservations', icon: ShoppingCart, active: true },
+    { label: 'Reviews', path: '/studio/reviews', icon: Star },
+    { label: 'Premium', path: '/studio/premium', icon: Settings },
+    { label: 'Report Issue', path: '/studio/reports', icon: Settings },
+  ];
+
+  // Status badge helper
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'Active':
+      case 1:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            Active
+          </span>
+        );
+      case 'Expired':
+      case 2:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500">
+            Expired
+          </span>
+        );
+      case 'Cancelled':
+      case 3:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">
+            Cancelled
+          </span>
+        );
+      case 'Completed':
+      case 4:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+            Completed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500">
+            {status}
+          </span>
+        );
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen bg-[#f8f7f3]">
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-[#103c2d] shadow-xl transition-all duration-300 ${
+          sidebarOpen ? 'w-64' : 'w-20'
+        }`}
+      >
+        <div className="flex h-20 shrink-0 items-center border-b border-white/10 px-4">
+          {sidebarOpen ? (
+            <div className="flex items-center gap-3">
+              <img src="/favicon.svg" alt="Marketplace" className="h-9 w-9" />
+              <div>
+                <p className="font-bold leading-tight text-white">Seller Studio</p>
+                <p className="mt-0.5 text-xs text-white/50">Business Management</p>
+              </div>
+            </div>
+          ) : (
+            <img src="/favicon.svg" alt="Marketplace" className="mx-auto h-9 w-9" />
+          )}
+        </div>
+
+        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => navigate(item.path)}
+                title={!sidebarOpen ? item.label : undefined}
+                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${
+                  item.active
+                    ? 'bg-yellow-400 font-semibold text-gray-950 shadow-lg shadow-yellow-900/10'
+                    : 'text-white/75 hover:bg-white/10 hover:text-white'
+                } ${!sidebarOpen ? 'justify-center' : ''}`}
+              >
+                <Icon size={20} />
+                {sidebarOpen && <span>{item.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="shrink-0 border-t border-white/10 p-4">
+          <button
+            type="button"
+            onClick={() => navigate('/studio/profile')}
+            title={!sidebarOpen ? 'Profile Settings' : undefined}
+            className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-white/75 transition-colors hover:bg-white/10 hover:text-white ${
+              !sidebarOpen ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {sidebarOpen && <span>Profile Settings</span>}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            title={!sidebarOpen ? 'Sign Out' : undefined}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 ${
+              !sidebarOpen ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {sidebarOpen && <span className="font-medium">Sign Out</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* SIDEBAR TOGGLE */}
+      <button
+        type="button"
+        onClick={() => setSidebarOpen((prev) => !prev)}
+        aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+        className={`fixed top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#103c2d] text-white shadow-lg transition-all duration-300 hover:bg-[#1a5c42] ${
+          sidebarOpen ? 'left-[15rem]' : 'left-14'
+        }`}
+      >
+        {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+      </button>
+
+      {/* MAIN AREA */}
+      <div className={`min-w-0 flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+        {/* TOP HEADER */}
+        <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
+          <div className="flex items-center justify-between gap-6">
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold text-gray-900 sm:text-2xl">Reservations</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                {currentTime.format('dddd, DD MMMM YYYY')}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden items-center gap-4 rounded-xl bg-[#103c2d] px-5 py-3 sm:flex">
+                <Clock size={22} className="text-yellow-400" />
+                <div>
+                  <p className="font-mono text-xl font-bold text-yellow-400">
+                    {currentTime.format('HH:mm:ss')}
+                  </p>
+                  <p className="mt-0.5 text-center text-[10px] text-white/60">
+                    {currentTime.format('DD/MM/YYYY')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* CONTENT */}
+        <main className="p-5 sm:p-8">
+          <div className="mb-8">
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Studio</p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">Reservations</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
+              Track who reserved your items and manage their status.
+            </p>
+          </div>
+
+          {/* SEARCH */}
+          <div className="mb-5">
+            <div className="relative w-full sm:max-w-md">
+              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search reservations..."
+                className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-4 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+              />
+            </div>
+          </div>
+
+          {/* RESERVATIONS LIST */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <img src="/favicon.svg" alt="Marketplace" className="w-12 h-12 animate-pulse" />
+            </div>
+          ) : filteredReservations.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mx-auto">
+                <ShoppingCart size={28} className="text-gray-400" />
+              </div>
+              <h3 className="mt-5 font-bold text-gray-800">No reservations found</h3>
+              <p className="mt-1 text-sm text-gray-400">
+                {searchQuery ? 'Try a different search term.' : 'Reservations will appear here when customers reserve your items.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredReservations.map((reservation, index) => (
+                <motion.div
+                  key={reservation.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.04 }}
+                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-gray-900">{reservation.listingTitle || 'Listing'}</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Reserved by {reservation.userName || 'Customer'}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
+                        <Timer size={13} />
+                        Expires {dayjs(reservation.expiresAt).fromNow()}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {getStatusBadge(reservation.status)}
+                      {(reservation.status === 'Active' || reservation.status === 1) && (
+                        <button
+                          type="button"
+                          onClick={() => handleComplete(reservation.id)}
+                          className="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-50 px-4 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                        >
+                          <CheckCircle size={16} />
+                          Complete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact info - only for active reservations */}
+                  {(reservation.status === 'Active' || reservation.status === 1) && (
+                    <div className="mt-4 flex items-center gap-4 border-t border-gray-100 pt-4">
+                      {reservation.phoneNumber && (
+                        <span className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone size={14} className="text-gray-400" />
+                          {reservation.phoneNumber}
+                        </span>
+                      )}
+                      {reservation.email && (
+                        <span className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail size={14} className="text-gray-400" />
+                          {reservation.email}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -16,6 +16,15 @@ import AdminCategories from './pages/AdminCategories';
 import AdminReports from './pages/AdminReports';
 import AdminAuditLogs from './pages/AdminAuditLogs';
 
+import SellerLogin from './pages/SellerLogin';
+import SellerDashboard from './pages/SellerDashboard';
+import SellerProfile from './pages/SellerProfile';
+import SellerListings from './pages/SellerListings';
+import SellerCreateListing from './pages/SellerCreateListing';
+import SellerReservations from './pages/SellerReservations';
+import SellerPremium from './pages/SellerPremium';
+import SellerReports from './pages/SellerReports';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -28,7 +37,7 @@ export default function App() {
           <Route path="/" element={<CustomerLayout />} />
 
           {/* =================================================
-              ADMIN ROUTES
+              ADMIN ROUTES - SECRET
           ================================================= */}
           <Route
             path="/control"
@@ -58,6 +67,49 @@ export default function App() {
           <Route
             path="/control/audit-logs"
             element={<AdminAuditLogs />}
+          />
+
+          {/* =================================================
+              SELLER ROUTES - SECRET
+          ================================================= */}
+          <Route
+            path="/studio"
+            element={<SellerLogin />}
+          />
+
+          <Route
+            path="/studio/dashboard"
+            element={<SellerDashboard />}
+          />
+
+          <Route
+            path="/studio/profile"
+            element={<SellerProfile />}
+          />
+
+          <Route
+            path="/studio/listings"
+            element={<SellerListings />}
+          />
+
+          <Route
+            path="/studio/listings/create"
+            element={<SellerCreateListing />}
+          />
+
+          <Route
+            path="/studio/reservations"
+            element={<SellerReservations />}
+          />
+
+          <Route
+            path="/studio/premium"
+            element={<SellerPremium />}
+          />
+
+          <Route
+            path="/studio/reports"
+            element={<SellerReports />}
           />
 
         </Routes>
