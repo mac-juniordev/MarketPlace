@@ -21,6 +21,9 @@ public class ListingDto
     public Guid BusinessId { get; set; }
     public Guid CategoryId { get; set; }
     public string BusinessName { get; set; } = string.Empty;
+    public string BusinessDescription { get; set; } = string.Empty;
+    public string? BusinessPhone { get; set; }
+    public string? BusinessEmail { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public List<string> Images { get; set; } = new List<string>();
     public string? City { get; set; }

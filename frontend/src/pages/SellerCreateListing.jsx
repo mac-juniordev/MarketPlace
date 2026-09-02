@@ -24,20 +24,23 @@ import {
   Plus,
   MapPin,
   Store,
+  Crosshair,
+  X,
 } from 'lucide-react';
 
 // Seller create listing page
 export default function SellerCreateListing() {
-  // Navigation hook
   const navigate = useNavigate();
 
-  // State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(dayjs());
   const [categories, setCategories] = useState([]);
   const [businessId, setBusinessId] = useState(null);
   const [images, setImages] = useState([]);
   const [locationType, setLocationType] = useState('fixed');
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -49,7 +52,10 @@ export default function SellerCreateListing() {
     city: '',
     quarter: '',
     address: '',
+    latitude: null,
+    longitude: null,
   });
+
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
@@ -73,10 +79,14 @@ export default function SellerCreateListing() {
         setCategories(categoriesResponse.data);
 
         if (businessResponse.data && businessResponse.data.length > 0) {
-          setBusinessId(businessResponse.data[0].id);
+          const biz = businessResponse.data[0];
+          setBusinessId(biz.id || biz.businessId);
+        } else {
+          setError('No business found. Please contact admin to create your business profile.');
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
+        setError('Failed to load data. Please try again.');
       }
     };
 
@@ -98,30 +108,89 @@ export default function SellerCreateListing() {
     navigate('/studio', { replace: true });
   };
 
+  // Get current location using browser geolocation
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setGettingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        setGettingLocation(false);
+      },
+      (error) => {
+        console.error('Failed to get location:', error);
+        alert('Failed to get your location. Please enter manually or use map picker.');
+        setGettingLocation(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  // Handle map picker selection
+  const handleMapSelect = (lat, lng) => {
+    setForm((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
+    setShowMapPicker(false);
+  };
+
   // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCreating(true);
     setError('');
 
+    if (!businessId) {
+      setError('No business found. Please contact admin.');
+      setCreating(false);
+      return;
+    }
+
+    if (!form.categoryId) {
+      setError('Please select a category.');
+      setCreating(false);
+      return;
+    }
+
     try {
       const payload = {
         title: form.title,
         description: form.description,
-        price: parseFloat(form.price),
+        price: parseFloat(form.price) || 0,
         type: form.type,
         businessId: businessId,
         categoryId: form.categoryId,
-        availableQuantity: form.availableQuantity,
+        availableQuantity: parseInt(form.availableQuantity) || 1,
         isReservable: form.isReservable,
         images: images,
+        city: locationType === 'fixed' ? form.city : null,
+        quarter: locationType === 'fixed' ? form.quarter : null,
+        address: locationType === 'fixed' ? form.address : null,
+        hasFixedLocation: locationType === 'fixed',
+        latitude: form.latitude,
+        longitude: form.longitude,
       };
 
       await listingApi.create(payload);
       navigate('/studio/listings');
     } catch (err) {
       console.error('Failed to create listing:', err);
-      setError(err.response?.data?.message || 'Failed to create listing');
+      setError(
+        err.response?.data?.errors?.request?.[0] ||
+        err.response?.data?.message ||
+        'Failed to create listing'
+      );
     } finally {
       setCreating(false);
     }
@@ -185,7 +254,6 @@ export default function SellerCreateListing() {
           <button
             type="button"
             onClick={() => navigate('/studio/profile')}
-            title={!sidebarOpen ? 'Profile Settings' : undefined}
             className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-white/75 transition-colors hover:bg-white/10 hover:text-white ${
               !sidebarOpen ? 'justify-center' : ''
             }`}
@@ -197,7 +265,6 @@ export default function SellerCreateListing() {
           <button
             type="button"
             onClick={handleLogout}
-            title={!sidebarOpen ? 'Sign Out' : undefined}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 ${
               !sidebarOpen ? 'justify-center' : ''
             }`}
@@ -212,7 +279,6 @@ export default function SellerCreateListing() {
       <button
         type="button"
         onClick={() => setSidebarOpen((prev) => !prev)}
-        aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         className={`fixed top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#103c2d] text-white shadow-lg transition-all duration-300 hover:bg-[#1a5c42] ${
           sidebarOpen ? 'left-[15rem]' : 'left-14'
         }`}
@@ -222,10 +288,9 @@ export default function SellerCreateListing() {
 
       {/* MAIN AREA */}
       <div className={`min-w-0 flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        {/* TOP HEADER */}
         <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
           <div className="flex items-center justify-between gap-6">
-            <div className="min-w-0">
+            <div>
               <h1 className="truncate text-xl font-bold text-gray-900 sm:text-2xl">Create Listing</h1>
               <p className="mt-1 text-sm text-gray-500">
                 {currentTime.format('dddd, DD MMMM YYYY')}
@@ -238,22 +303,15 @@ export default function SellerCreateListing() {
                 <p className="font-mono text-xl font-bold text-yellow-400">
                   {currentTime.format('HH:mm:ss')}
                 </p>
-                <p className="mt-0.5 text-center text-[10px] text-white/60">
-                  {currentTime.format('DD/MM/YYYY')}
-                </p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* CONTENT */}
         <main className="p-5 sm:p-8">
           <div className="mb-8">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Studio</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">New Listing</h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Add a new product to your marketplace business.
-            </p>
           </div>
 
           {error && (
@@ -265,7 +323,6 @@ export default function SellerCreateListing() {
           <form onSubmit={handleSubmit} className="max-w-3xl">
             <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm">
               <div className="grid gap-5 sm:grid-cols-2">
-                {/* Title */}
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Title <span className="text-red-500">*</span>
@@ -275,12 +332,10 @@ export default function SellerCreateListing() {
                     required
                     value={form.title}
                     onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="Example: iPhone 13 Pro 128GB"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                 </div>
 
-                {/* Price */}
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Price (XAF) <span className="text-red-500">*</span>
@@ -292,12 +347,10 @@ export default function SellerCreateListing() {
                     step="0.01"
                     value={form.price}
                     onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
-                    placeholder="0.00"
                     className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                 </div>
 
-                {/* Category */}
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Category <span className="text-red-500">*</span>
@@ -317,7 +370,6 @@ export default function SellerCreateListing() {
                   </select>
                 </div>
 
-                {/* Listing Type */}
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Listing Type
@@ -334,7 +386,6 @@ export default function SellerCreateListing() {
                   </select>
                 </div>
 
-                {/* Available Quantity */}
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Available Quantity
@@ -348,7 +399,7 @@ export default function SellerCreateListing() {
                   />
                 </div>
 
-                {/* Location Type */}
+                {/* LOCATION TYPE */}
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Location Type
@@ -385,13 +436,11 @@ export default function SellerCreateListing() {
                   </div>
                 </div>
 
-                {/* Location fields - only if fixed */}
+                {/* FIXED LOCATION FIELDS */}
                 {locationType === 'fixed' && (
                   <>
                     <div>
-                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                        City
-                      </label>
+                      <label className="mb-1.5 block text-sm font-bold text-gray-700">City</label>
                       <input
                         type="text"
                         value={form.city}
@@ -401,9 +450,7 @@ export default function SellerCreateListing() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                        Quarter / Neighborhood
-                      </label>
+                      <label className="mb-1.5 block text-sm font-bold text-gray-700">Quarter / Neighborhood</label>
                       <input
                         type="text"
                         value={form.quarter}
@@ -413,9 +460,7 @@ export default function SellerCreateListing() {
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
-                        Address
-                      </label>
+                      <label className="mb-1.5 block text-sm font-bold text-gray-700">Address</label>
                       <input
                         type="text"
                         value={form.address}
@@ -424,15 +469,57 @@ export default function SellerCreateListing() {
                         className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                       />
                     </div>
+
+                    {/* GPS COORDINATES */}
+                    <div className="sm:col-span-2">
+                      <label className="mb-1.5 block text-sm font-bold text-gray-700">
+                        GPS Coordinates
+                      </label>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={handleGetCurrentLocation}
+                          disabled={gettingLocation}
+                          className="flex-1 h-12 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <Crosshair size={16} />
+                          {gettingLocation ? 'Getting location...' : 'Use My Current Location'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowMapPicker(true)}
+                          className="flex-1 h-12 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+                        >
+                          <MapPin size={16} />
+                          Pick on Map
+                        </button>
+                      </div>
+
+                      {form.latitude && form.longitude && (
+                        <div className="mt-3 flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3">
+                          <MapPin size={18} className="text-emerald-600" />
+                          <p className="text-sm font-semibold text-emerald-700">
+                            {form.latitude.toFixed(6)}, {form.longitude.toFixed(6)}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, latitude: null, longitude: null }))}
+                            className="ml-auto text-emerald-600 hover:text-emerald-800"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
 
-                {/* Image Upload */}
+                {/* IMAGE UPLOAD */}
                 <div className="sm:col-span-2">
                   <ImageUpload images={images} setImages={setImages} maxImages={5} />
                 </div>
 
-                {/* Description */}
+                {/* DESCRIPTION */}
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-bold text-gray-700">
                     Description <span className="text-red-500">*</span>
@@ -442,12 +529,10 @@ export default function SellerCreateListing() {
                     value={form.description}
                     onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                     rows={6}
-                    placeholder="Describe your listing in detail..."
                     className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                   />
                 </div>
 
-                {/* Reservable checkbox */}
                 <div className="sm:col-span-2">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
@@ -484,6 +569,55 @@ export default function SellerCreateListing() {
           </form>
         </main>
       </div>
+
+      {/* MAP PICKER MODAL */}
+      {showMapPicker && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black bg-opacity-60" onClick={() => setShowMapPicker(false)} />
+          <div className="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-black text-gray-900">Pick Location on Map</h2>
+              <button
+                type="button"
+                onClick={() => setShowMapPicker(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Click anywhere on the map to set your location. Default is Douala, Cameroon.
+            </p>
+
+            <div className="relative overflow-hidden rounded-xl border border-gray-200">
+              <iframe
+                title="Map Picker"
+                src="https://www.google.com/maps?q=Douala,Cameroon&output=embed"
+                className="h-[400px] w-full"
+                loading="lazy"
+              />
+            </div>
+
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => handleMapSelect(4.0511, 9.7679)}
+                className="flex-1 rounded-xl bg-[#103c2d] px-5 py-3 text-sm font-bold text-white hover:bg-[#174d3a]"
+              >
+                Use Douala Center
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMapSelect(3.8667, 11.5167)}
+                className="flex-1 rounded-xl bg-[#103c2d] px-5 py-3 text-sm font-bold text-white hover:bg-[#174d3a]"
+              >
+                Use Yaounde Center
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

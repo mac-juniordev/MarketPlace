@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 // Import dayjs
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+// Import API
+import { reportApi } from '../services/api';
 // Import icons
 import {
   LayoutDashboard,
@@ -29,10 +31,8 @@ dayjs.extend(relativeTime);
 
 // Admin reports page
 export default function AdminReports() {
-  // Navigation hook
   const navigate = useNavigate();
 
-  // State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(dayjs());
   const [reports, setReports] = useState([]);
@@ -47,11 +47,20 @@ export default function AdminReports() {
     }
   }, [navigate]);
 
-  // Fetch reports - will connect to API later
+  // Fetch reports
   useEffect(() => {
-    // Simulated empty state for now
-    setReports([]);
-    setLoading(false);
+    const fetchReports = async () => {
+      try {
+        const response = await reportApi.getPending();
+        setReports(response.data);
+      } catch (error) {
+        console.error('Failed to fetch reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
   }, []);
 
   // Live clock
@@ -75,7 +84,7 @@ export default function AdminReports() {
     if (!query) return reports;
 
     return reports.filter((report) => {
-      const searchableText = [report.reason, report.reporterName]
+      const searchableText = [report.reason, report.reporterUserId]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -83,14 +92,24 @@ export default function AdminReports() {
     });
   }, [reports, searchQuery]);
 
-  // Resolve report
   const handleResolve = async (reportId) => {
-    setReports((prev) => prev.filter((r) => r.id !== reportId));
+    try {
+      await reportApi.resolve(reportId);
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+    } catch (error) {
+      console.error('Failed to resolve report:', error);
+      alert('Failed to resolve report');
+    }
   };
 
-  // Dismiss report
   const handleDismiss = async (reportId) => {
-    setReports((prev) => prev.filter((r) => r.id !== reportId));
+    try {
+      await reportApi.dismiss(reportId);
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+    } catch (error) {
+      console.error('Failed to dismiss report:', error);
+      alert('Failed to dismiss report');
+    }
   };
 
   // Navigation
@@ -106,9 +125,8 @@ export default function AdminReports() {
     <div className="flex min-h-screen bg-[#f8f7f3]">
       {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-[#103c2d] shadow-xl transition-all duration-300 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-[#103c2d] shadow-xl transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'
+          }`}
       >
         <div className="flex h-20 shrink-0 items-center border-b border-white/10 px-4">
           {sidebarOpen ? (
@@ -133,11 +151,10 @@ export default function AdminReports() {
                 type="button"
                 onClick={() => navigate(item.path)}
                 title={!sidebarOpen ? item.label : undefined}
-                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${
-                  item.active
+                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${item.active
                     ? 'bg-yellow-400 font-semibold text-gray-950 shadow-lg shadow-yellow-900/10'
                     : 'text-white/75 hover:bg-white/10 hover:text-white'
-                } ${!sidebarOpen ? 'justify-center' : ''}`}
+                  } ${!sidebarOpen ? 'justify-center' : ''}`}
               >
                 <Icon size={20} />
                 {sidebarOpen && <span>{item.label}</span>}
@@ -151,9 +168,8 @@ export default function AdminReports() {
             type="button"
             onClick={handleLogout}
             title={!sidebarOpen ? 'Sign Out' : undefined}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 ${
-              !sidebarOpen ? 'justify-center' : ''
-            }`}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 ${!sidebarOpen ? 'justify-center' : ''
+              }`}
           >
             <LogOut size={20} />
             {sidebarOpen && <span className="font-medium">Sign Out</span>}
@@ -166,16 +182,14 @@ export default function AdminReports() {
         type="button"
         onClick={() => setSidebarOpen((prev) => !prev)}
         aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        className={`fixed top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#103c2d] text-white shadow-lg transition-all duration-300 hover:bg-[#1a5c42] ${
-          sidebarOpen ? 'left-[15rem]' : 'left-14'
-        }`}
+        className={`fixed top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#103c2d] text-white shadow-lg transition-all duration-300 hover:bg-[#1a5c42] ${sidebarOpen ? 'left-[15rem]' : 'left-14'
+          }`}
       >
         {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
       </button>
 
       {/* MAIN AREA */}
       <div className={`min-w-0 flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        {/* TOP HEADER */}
         <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
           <div className="flex items-center justify-between gap-6">
             <div className="min-w-0">
@@ -185,25 +199,21 @@ export default function AdminReports() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="hidden items-center gap-4 rounded-xl bg-[#103c2d] px-5 py-3 sm:flex">
-                <Clock size={22} className="text-yellow-400" />
-                <div>
-                  <p className="font-mono text-xl font-bold text-yellow-400">
-                    {currentTime.format('HH:mm:ss')}
-                  </p>
-                  <p className="mt-0.5 text-center text-[10px] text-white/60">
-                    {currentTime.format('DD/MM/YYYY')}
-                  </p>
-                </div>
+            <div className="hidden items-center gap-4 rounded-xl bg-[#103c2d] px-5 py-3 sm:flex">
+              <Clock size={22} className="text-yellow-400" />
+              <div>
+                <p className="font-mono text-xl font-bold text-yellow-400">
+                  {currentTime.format('HH:mm:ss')}
+                </p>
+                <p className="mt-0.5 text-center text-[10px] text-white/60">
+                  {currentTime.format('DD/MM/YYYY')}
+                </p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* CONTENT */}
         <main className="p-5 sm:p-8">
-          {/* Page heading */}
           <div className="mb-8">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Marketplace</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">Report Management</h2>
@@ -227,19 +237,23 @@ export default function AdminReports() {
           </div>
 
           {/* REPORTS LIST */}
-          <div className="space-y-4">
-            {filteredReports.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mx-auto">
-                  <Flag size={28} className="text-gray-400" />
-                </div>
-                <h3 className="mt-5 font-bold text-gray-800">No reports found</h3>
-                <p className="mt-1 text-sm text-gray-400">
-                  {searchQuery ? 'Try a different search term.' : 'There are no pending reports.'}
-                </p>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <img src="/favicon.svg" alt="Marketplace" className="w-12 h-12 animate-pulse" />
+            </div>
+          ) : filteredReports.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mx-auto">
+                <Flag size={28} className="text-gray-400" />
               </div>
-            ) : (
-              filteredReports.map((report, index) => (
+              <h3 className="mt-5 font-bold text-gray-800">No reports found</h3>
+              <p className="mt-1 text-sm text-gray-400">
+                {searchQuery ? 'Try a different search term.' : 'There are no pending reports.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredReports.map((report, index) => (
                 <motion.div
                   key={report.id}
                   initial={{ opacity: 0, y: 15 }}
@@ -255,7 +269,7 @@ export default function AdminReports() {
                       <div>
                         <p className="font-bold text-gray-900">{report.reason || 'Report'}</p>
                         <p className="mt-1 text-sm text-gray-500">
-                          Reported by {report.reporterName || 'User'}
+                          Reported listing: {report.reportedListingId || 'N/A'}
                         </p>
                         <p className="mt-1 text-xs text-gray-400">
                           {dayjs(report.createdAt).fromNow()}
@@ -283,9 +297,9 @@ export default function AdminReports() {
                     </div>
                   </div>
                 </motion.div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </div>

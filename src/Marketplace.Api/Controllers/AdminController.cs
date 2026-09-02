@@ -1,17 +1,28 @@
+// Import DTOs
 using Marketplace.Application.DTOs.Business;
 using Marketplace.Application.DTOs.User;
+// Import exceptions
 using Marketplace.Application.Exceptions;
+// Import interfaces
 using Marketplace.Application.Interfaces;
+// Import services
+using Marketplace.Application.Services;
+// Import entities
 using Marketplace.Domain.Entities;
+// Import enums
 using Marketplace.Domain.Enums;
-using Marketplace.Infrastructure.Data;
-
+// Import authorization
 using Microsoft.AspNetCore.Authorization;
+// Import MVC
 using Microsoft.AspNetCore.Mvc;
+// Import EF Core
 using Microsoft.EntityFrameworkCore;
+// Import DbContext
+using Marketplace.Infrastructure.Data;
 
 namespace Marketplace.Api.Controllers;
 
+// API controller for admin operations
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "SuperAdmin")]
@@ -36,7 +47,6 @@ public class AdminController : ControllerBase
 
     // ============================================================
     // DASHBOARD STATS
-    // GET /api/admin/stats
     // ============================================================
 
     [HttpGet("stats")]
@@ -61,213 +71,65 @@ public class AdminController : ControllerBase
                 );
 
             totalSellers = await sellerUsers.CountAsync();
-
-            activeSellers = await sellerUsers
-                .Where(u => u.IsActive)
-                .CountAsync();
+            activeSellers = await sellerUsers.Where(u => u.IsActive).CountAsync();
         }
 
-        var totalListings = await _context.Listings
-            .CountAsync();
-
-        var activeListings = await _context.Listings
-            .CountAsync(l => l.IsAvailable);
-
+        var totalListings = await _context.Listings.CountAsync();
+        var activeListings = await _context.Listings.CountAsync(l => l.IsAvailable);
         var activeReservations = await _context.Reservations
-            .CountAsync(r =>
-                r.Status == ReservationStatus.Active &&
-                r.ExpiresAt > DateTime.UtcNow);
-
-        var totalReservations = await _context.Reservations
-            .CountAsync();
-
-        var totalBusinesses = await _context.Businesses
-            .CountAsync();
-
-        var totalUsers = await _context.Users
-            .CountAsync();
-
-        var pendingReports = await _context.Reports
-            .CountAsync(r => r.Status == ReportStatus.Pending);
-
-        // ========================================================
-        // LISTINGS BY CATEGORY
-        // ========================================================
+            .CountAsync(r => r.Status == ReservationStatus.Active && r.ExpiresAt > DateTime.UtcNow);
+        var totalReservations = await _context.Reservations.CountAsync();
+        var totalBusinesses = await _context.Businesses.CountAsync();
+        var totalUsers = await _context.Users.CountAsync();
+        var pendingReports = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Pending);
 
         var listingsByCategory = await _context.Listings
             .AsNoTracking()
             .GroupBy(l => l.Category.Name)
-            .Select(g => new
-            {
-                name = g.Key,
-                value = g.Count()
-            })
+            .Select(g => new { name = g.Key, value = g.Count() })
             .OrderByDescending(x => x.value)
             .ToListAsync();
-
-        // ========================================================
-        // LISTINGS BY TYPE
-        // ========================================================
 
         var listingsByType = await _context.Listings
             .AsNoTracking()
             .GroupBy(l => l.Type)
-            .Select(g => new
-            {
-                name = g.Key.ToString(),
-                value = g.Count()
-            })
+            .Select(g => new { name = g.Key.ToString(), value = g.Count() })
             .OrderByDescending(x => x.value)
             .ToListAsync();
 
-        // ========================================================
-        // SELLERS CREATED PER MONTH
-        // ========================================================
-
-        var sellerGrowth = new List<SellerGrowthDto>();
+        var recentSellers = new List<object>();
 
         if (sellerRole != null)
         {
-            var startDate = DateTime.UtcNow
-                .Date
-                .AddMonths(-11);
-
-            sellerGrowth = await _context.UserRoles
+            recentSellers = await _context.UserRoles
                 .Where(ur => ur.RoleId == sellerRole.Id)
-                .Join(
-                    _context.Users,
-                    ur => ur.UserId,
-                    u => u.Id,
-                    (_, u) => u
-                )
-                .Where(u => u.CreatedAt >= startDate)
-                .GroupBy(u => new
-                {
-                    u.CreatedAt.Year,
-                    u.CreatedAt.Month
-                })
-                .Select(g => new SellerGrowthDto
-                {
-                    Year = g.Key.Year,
-                    Month = g.Key.Month,
-                    Count = g.Count()
-                })
-                .OrderBy(x => x.Year)
-                .ThenBy(x => x.Month)
-                .ToListAsync();
-        }
-
-        // ========================================================
-        // LISTINGS CREATED PER MONTH
-        // ========================================================
-
-        var listingGrowth = await _context.Listings
-            .AsNoTracking()
-            .Where(l => l.CreatedAt >= DateTime.UtcNow.Date.AddMonths(-11))
-            .GroupBy(l => new
-            {
-                l.CreatedAt.Year,
-                l.CreatedAt.Month
-            })
-            .Select(g => new GrowthDto
-            {
-                Year = g.Key.Year,
-                Month = g.Key.Month,
-                Count = g.Count()
-            })
-            .OrderBy(x => x.Year)
-            .ThenBy(x => x.Month)
-            .ToListAsync();
-
-        // ========================================================
-        // RESERVATIONS CREATED PER MONTH
-        // ========================================================
-
-        var reservationGrowth = await _context.Reservations
-            .AsNoTracking()
-            .Where(r => r.CreatedAt >= DateTime.UtcNow.Date.AddMonths(-11))
-            .GroupBy(r => new
-            {
-                r.CreatedAt.Year,
-                r.CreatedAt.Month
-            })
-            .Select(g => new GrowthDto
-            {
-                Year = g.Key.Year,
-                Month = g.Key.Month,
-                Count = g.Count()
-            })
-            .OrderBy(x => x.Year)
-            .ThenBy(x => x.Month)
-            .ToListAsync();
-
-        // ========================================================
-        // RECENT SELLERS
-        // ========================================================
-
-        var recentSellers = sellerRole == null
-            ? new List<RecentSellerDto>()
-            : await _context.UserRoles
-                .Where(ur => ur.RoleId == sellerRole.Id)
-                .Join(
-                    _context.Users,
-                    ur => ur.UserId,
-                    u => u.Id,
-                    (_, u) => u
-                )
+                .Join(_context.Users, ur => ur.UserId, u => u.Id, (_, u) => u)
                 .OrderByDescending(u => u.CreatedAt)
                 .Take(5)
-                .Select(u => new RecentSellerDto
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    AvatarUrl = u.AvatarUrl,
-                    CreatedAt = u.CreatedAt
-                })
+                .Select(u => (object)new { u.Id, u.Email, u.FirstName, u.LastName, u.CreatedAt })
                 .ToListAsync();
-
-        // ========================================================
-        // RECENT LISTINGS
-        // ========================================================
+        }
 
         var recentListings = await _context.Listings
             .AsNoTracking()
             .OrderByDescending(l => l.CreatedAt)
             .Take(5)
-            .Select(l => new RecentListingDto
-            {
-                Id = l.Id,
-                Title = l.Title,
-                Price = l.Price,
-                CreatedAt = l.CreatedAt,
-                BusinessName = l.Business.Name
-            })
+            .Select(l => new { l.Id, l.Title, l.Price, l.CreatedAt, BusinessName = l.Business.Name })
             .ToListAsync();
 
         return Ok(new
         {
             totalSellers,
             activeSellers,
-
             totalListings,
             activeListings,
-
             activeReservations,
             totalReservations,
-
             totalBusinesses,
             totalUsers,
             pendingReports,
-
             listingsByCategory,
             listingsByType,
-
-            sellerGrowth,
-            listingGrowth,
-            reservationGrowth,
-
             recentSellers,
             recentListings
         });
@@ -285,9 +147,7 @@ public class AdminController : ControllerBase
             .FirstOrDefaultAsync(r => r.Name == "Seller");
 
         if (sellerRole == null)
-        {
             return Ok(new List<SellerListDto>());
-        }
 
         var sellerUserIds = await _context.UserRoles
             .Where(ur => ur.RoleId == sellerRole.Id)
@@ -325,32 +185,28 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        var result = users
-            .Select(user =>
+        var result = users.Select(user =>
+        {
+            var business = businesses.FirstOrDefault(b => b.OwnerId == user.Id);
+
+            return new SellerListDto
             {
-                var business = businesses
-                    .FirstOrDefault(b => b.OwnerId == user.Id);
-
-                return new SellerListDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    AvatarUrl = user.AvatarUrl,
-                    IsActive = user.IsActive,
-                    CreatedAt = user.CreatedAt,
-
-                    BusinessId = business?.Id,
-                    BusinessName = business?.Name,
-                    BusinessDescription = business?.Description,
-                    LogoUrl = business?.LogoUrl,
-                    IsVerified = business?.IsVerified ?? false,
-                    BusinessIsActive = business?.IsActive ?? false
-                };
-            })
-            .ToList();
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                AvatarUrl = user.AvatarUrl,
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt,
+                BusinessId = business?.Id,
+                BusinessName = business?.Name,
+                BusinessDescription = business?.Description,
+                LogoUrl = business?.LogoUrl,
+                IsVerified = business?.IsVerified ?? false,
+                BusinessIsActive = business?.IsActive ?? false
+            };
+        }).ToList();
 
         return Ok(result);
     }
@@ -360,8 +216,7 @@ public class AdminController : ControllerBase
     // ============================================================
 
     [HttpPost("sellers")]
-    public async Task<IActionResult> CreateSeller(
-        [FromBody] CreateSellerRequest request)
+    public async Task<IActionResult> CreateSeller([FromBody] CreateSellerRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.Password) ||
@@ -369,51 +224,25 @@ public class AdminController : ControllerBase
             string.IsNullOrWhiteSpace(request.LastName) ||
             string.IsNullOrWhiteSpace(request.BusinessName))
         {
-            throw new ValidationException(
-                "All required fields must be provided."
-            );
+            throw new ValidationException("All required fields must be provided.");
         }
 
-        var normalizedEmail = request.Email
-            .Trim()
-            .ToLowerInvariant();
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
         if (await _userRepository.ExistsAsync(normalizedEmail))
-        {
-            throw new ValidationException(
-                "Email address is already registered."
-            );
-        }
+            throw new ValidationException("Email address is already registered.");
 
         var user = new User
         {
             Email = normalizedEmail,
-
-            PasswordHash = _passwordHasher.Hash(
-                request.Password
-            ),
-
+            PasswordHash = _passwordHasher.Hash(request.Password),
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
-
-            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
-                ? null
-                : request.PhoneNumber.Trim(),
-
-            AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl)
-                ? null
-                : request.AvatarUrl.Trim(),
-
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+            AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim(),
             IsEmailVerified = true,
             IsPhoneVerified = false,
             IsActive = true,
-
-            // IMPORTANT:
-            // Do not use Guid.NewGuid() if CreatedBy is a
-            // foreign key/reference to an actual user.
-            //
-            // If your User entity requires CreatedBy, use the
-            // authenticated admin's ID instead.
             CreatedBy = GetCurrentAdminId()
         };
 
@@ -423,12 +252,7 @@ public class AdminController : ControllerBase
             .FirstOrDefaultAsync(r => r.Name == "Seller");
 
         if (sellerRole == null)
-        {
-            return BadRequest(new
-            {
-                message = "Seller role has not been configured."
-            });
-        }
+            return BadRequest(new { message = "Seller role has not been configured." });
 
         await _context.UserRoles.AddAsync(new UserRole
         {
@@ -441,18 +265,13 @@ public class AdminController : ControllerBase
         var business = new Business
         {
             Name = request.BusinessName.Trim(),
-
-            Description = string.IsNullOrWhiteSpace(
-                request.BusinessDescription)
+            Description = string.IsNullOrWhiteSpace(request.BusinessDescription)
                 ? string.Empty
                 : request.BusinessDescription.Trim(),
-
             OwnerId = user.Id,
-
-            LogoUrl = string.IsNullOrWhiteSpace(request.LogoUrl)
-                ? null
-                : request.LogoUrl.Trim(),
-
+            PhoneNumber = user.PhoneNumber,
+            Email = user.Email,
+            LogoUrl = string.IsNullOrWhiteSpace(request.LogoUrl) ? null : request.LogoUrl.Trim(),
             IsVerified = false,
             IsActive = true,
             CreatedBy = user.Id
@@ -470,7 +289,6 @@ public class AdminController : ControllerBase
             AvatarUrl = user.AvatarUrl,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
-
             BusinessId = business.Id,
             BusinessName = business.Name,
             BusinessDescription = business.Description,
@@ -487,16 +305,10 @@ public class AdminController : ControllerBase
     [HttpPost("sellers/{id}/suspend")]
     public async Task<IActionResult> SuspendSeller(Guid id)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == id);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
-        {
-            return NotFound(new
-            {
-                message = "Seller not found."
-            });
-        }
+            return NotFound(new { message = "Seller not found." });
 
         user.IsActive = !user.IsActive;
         user.MarkUpdated();
@@ -505,10 +317,7 @@ public class AdminController : ControllerBase
 
         return Ok(new
         {
-            message = user.IsActive
-                ? "Seller activated."
-                : "Seller suspended.",
-
+            message = user.IsActive ? "Seller activated." : "Seller suspended.",
             isActive = user.IsActive
         });
     }
@@ -520,45 +329,131 @@ public class AdminController : ControllerBase
     [HttpDelete("sellers/{id}")]
     public async Task<IActionResult> DeleteSeller(Guid id)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == id);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
-        {
-            return NotFound(new
-            {
-                message = "Seller not found."
-            });
-        }
+            return NotFound(new { message = "Seller not found." });
 
-        var sellerRole = await _context.Roles
-            .FirstOrDefaultAsync(r => r.Name == "Seller");
-
-        if (sellerRole != null)
-        {
-            var userRoles = await _context.UserRoles
-                .Where(ur =>
-                    ur.UserId == user.Id &&
-                    ur.RoleId == sellerRole.Id)
-                .ToListAsync();
-
-            _context.UserRoles.RemoveRange(userRoles);
-        }
-
+        // Find businesses owned by this seller
         var businesses = await _context.Businesses
             .Where(b => b.OwnerId == user.Id)
             .ToListAsync();
 
-        _context.Businesses.RemoveRange(businesses);
+        foreach (var business in businesses)
+        {
+            // Find listings for this business
+            var listings = await _context.Listings
+                .Where(l => l.BusinessId == business.Id)
+                .ToListAsync();
+
+            foreach (var listing in listings)
+            {
+                var images = await _context.ListingImages
+                    .Where(i => i.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.ListingImages.RemoveRange(images);
+
+                var productDetails = await _context.ProductDetails
+                    .Where(p => p.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.ProductDetails.RemoveRange(productDetails);
+
+                var propertyDetails = await _context.PropertyDetails
+                    .Where(p => p.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.PropertyDetails.RemoveRange(propertyDetails);
+
+                var vehicleDetails = await _context.VehicleDetails
+                    .Where(v => v.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.VehicleDetails.RemoveRange(vehicleDetails);
+
+                var serviceDetails = await _context.ServiceDetails
+                    .Where(s => s.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.ServiceDetails.RemoveRange(serviceDetails);
+
+                var reservations = await _context.Reservations
+                    .Where(r => r.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.Reservations.RemoveRange(reservations);
+
+                var reviews = await _context.Reviews
+                    .Where(r => r.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.Reviews.RemoveRange(reviews);
+
+                var reports = await _context.Reports
+                    .Where(r => r.ReportedListingId == listing.Id)
+                    .ToListAsync();
+                _context.Reports.RemoveRange(reports);
+
+                var promotions = await _context.Promotions
+                    .Where(p => p.ListingId == listing.Id)
+                    .ToListAsync();
+                _context.Promotions.RemoveRange(promotions);
+
+                _context.Listings.Remove(listing);
+            }
+
+            var businessReports = await _context.Reports
+                .Where(r => r.ReportedBusinessId == business.Id)
+                .ToListAsync();
+            _context.Reports.RemoveRange(businessReports);
+
+            var staff = await _context.BusinessStaff
+                .Where(s => s.BusinessId == business.Id)
+                .ToListAsync();
+            _context.BusinessStaff.RemoveRange(staff);
+
+            var subscriptions = await _context.Subscriptions
+                .Where(s => s.BusinessId == business.Id)
+                .ToListAsync();
+            _context.Subscriptions.RemoveRange(subscriptions);
+
+            var payments = await _context.Payments
+                .Where(p => p.BusinessId == business.Id)
+                .ToListAsync();
+            _context.Payments.RemoveRange(payments);
+
+            var transactions = await _context.Transactions
+                .Where(t => t.BusinessId == business.Id)
+                .ToListAsync();
+            _context.Transactions.RemoveRange(transactions);
+
+            var verificationRequests = await _context.VerificationRequests
+                .Where(v => v.BusinessId == business.Id)
+                .ToListAsync();
+            _context.VerificationRequests.RemoveRange(verificationRequests);
+
+            _context.Businesses.Remove(business);
+        }
+
+        var userReports = await _context.Reports
+            .Where(r => r.ReportedUserId == user.Id || r.ReporterUserId == user.Id)
+            .ToListAsync();
+        _context.Reports.RemoveRange(userReports);
+
+        var userRoles = await _context.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .ToListAsync();
+        _context.UserRoles.RemoveRange(userRoles);
+
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == user.Id)
+            .ToListAsync();
+        _context.Notifications.RemoveRange(notifications);
+
+        var auditLogs = await _context.AuditLogs
+            .Where(a => a.ActorUserId == user.Id)
+            .ToListAsync();
+        _context.AuditLogs.RemoveRange(auditLogs);
 
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();
 
-        return Ok(new
-        {
-            message = "Seller deleted."
-        });
+        return Ok(new { message = "Seller deleted." });
     }
 
     // ============================================================
@@ -568,18 +463,11 @@ public class AdminController : ControllerBase
     private Guid GetCurrentAdminId()
     {
         var claim =
-            User.FindFirst(
-                System.Security.Claims.ClaimTypes.NameIdentifier
-            )
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
             ?? User.FindFirst("sub");
 
-        if (claim == null ||
-            !Guid.TryParse(claim.Value, out var adminId))
-        {
-            throw new UnauthorizedAccessException(
-                "Unable to determine the current administrator."
-            );
-        }
+        if (claim == null || !Guid.TryParse(claim.Value, out var adminId))
+            throw new UnauthorizedAccessException("Unable to determine the current administrator.");
 
         return adminId;
     }
@@ -592,97 +480,30 @@ public class AdminController : ControllerBase
 public class CreateSellerRequest
 {
     public string Email { get; set; } = string.Empty;
-
     public string Password { get; set; } = string.Empty;
-
     public string FirstName { get; set; } = string.Empty;
-
     public string LastName { get; set; } = string.Empty;
-
     public string? PhoneNumber { get; set; }
-
     public string BusinessName { get; set; } = string.Empty;
-
     public string? BusinessDescription { get; set; }
-
     public string? AvatarUrl { get; set; }
-
     public string? LogoUrl { get; set; }
 }
 
 public class SellerListDto
 {
     public Guid Id { get; set; }
-
     public string Email { get; set; } = string.Empty;
-
     public string FirstName { get; set; } = string.Empty;
-
     public string LastName { get; set; } = string.Empty;
-
     public string? PhoneNumber { get; set; }
-
     public string? AvatarUrl { get; set; }
-
     public bool IsActive { get; set; }
-
     public DateTime CreatedAt { get; set; }
-
     public Guid? BusinessId { get; set; }
-
     public string? BusinessName { get; set; }
-
     public string? BusinessDescription { get; set; }
-
     public string? LogoUrl { get; set; }
-
     public bool IsVerified { get; set; }
-
     public bool BusinessIsActive { get; set; }
-}
-
-public class RecentSellerDto
-{
-    public Guid Id { get; set; }
-
-    public string Email { get; set; } = string.Empty;
-
-    public string FirstName { get; set; } = string.Empty;
-
-    public string LastName { get; set; } = string.Empty;
-
-    public string? AvatarUrl { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-}
-
-public class RecentListingDto
-{
-    public Guid Id { get; set; }
-
-    public string Title { get; set; } = string.Empty;
-
-    public decimal Price { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-
-    public string BusinessName { get; set; } = string.Empty;
-}
-
-public class GrowthDto
-{
-    public int Year { get; set; }
-
-    public int Month { get; set; }
-
-    public int Count { get; set; }
-}
-
-public class SellerGrowthDto
-{
-    public int Year { get; set; }
-
-    public int Month { get; set; }
-
-    public int Count { get; set; }
 }

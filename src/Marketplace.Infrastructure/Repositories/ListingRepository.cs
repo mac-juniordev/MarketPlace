@@ -88,14 +88,57 @@ public class ListingRepository : IListingRepository
     }
 
     public async Task DeleteAsync(Guid id)
+{
+    var listing = await _context.Listings
+        .Include(l => l.Images)
+        .Include(l => l.ProductDetails)
+        .Include(l => l.PropertyDetails)
+        .Include(l => l.VehicleDetails)
+        .Include(l => l.ServiceDetails)
+        .Include(l => l.Reservations)
+        .Include(l => l.Reviews)
+        .Include(l => l.Promotions)
+        .FirstOrDefaultAsync(l => l.Id == id);
+
+    if (listing != null)
     {
-        var listing = await _context.Listings.FindAsync(id);
-        if (listing != null)
-        {
-            _context.Listings.Remove(listing);
-            await _context.SaveChangesAsync();
-        }
+        // Delete reports that reference this listing
+        var reports = await _context.Reports
+            .Where(r => r.ReportedListingId == id)
+            .ToListAsync();
+
+        if (reports.Count > 0)
+            _context.Reports.RemoveRange(reports);
+
+        // Delete related entities
+        if (listing.Images != null)
+            _context.ListingImages.RemoveRange(listing.Images);
+
+        if (listing.ProductDetails != null)
+            _context.ProductDetails.Remove(listing.ProductDetails);
+
+        if (listing.PropertyDetails != null)
+            _context.PropertyDetails.Remove(listing.PropertyDetails);
+
+        if (listing.VehicleDetails != null)
+            _context.VehicleDetails.Remove(listing.VehicleDetails);
+
+        if (listing.ServiceDetails != null)
+            _context.ServiceDetails.Remove(listing.ServiceDetails);
+
+        if (listing.Reservations != null)
+            _context.Reservations.RemoveRange(listing.Reservations);
+
+        if (listing.Reviews != null)
+            _context.Reviews.RemoveRange(listing.Reviews);
+
+        if (listing.Promotions != null)
+            _context.Promotions.RemoveRange(listing.Promotions);
+
+        _context.Listings.Remove(listing);
+        await _context.SaveChangesAsync();
     }
+}
 
     public async Task<Listing?> GetByIdWithLockAsync(Guid id)
     {

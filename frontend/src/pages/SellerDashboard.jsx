@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 // Import dayjs
 import dayjs from 'dayjs';
+// Import API
+import { listingApi } from '../services/api';
 // Import icons
 import {
   LayoutDashboard,
@@ -24,10 +26,8 @@ import {
 
 // Seller dashboard page
 export default function SellerDashboard() {
-  // Navigation hook
   const navigate = useNavigate();
 
-  // State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(dayjs());
   const [stats, setStats] = useState({
@@ -46,6 +46,20 @@ export default function SellerDashboard() {
       navigate('/studio', { replace: true });
     }
   }, [navigate]);
+
+  // Fetch seller stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await listingApi.getSellerStats();
+        setStats(response.data);
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   // Live clock
   useEffect(() => {
@@ -125,7 +139,6 @@ export default function SellerDashboard() {
         </nav>
 
         <div className="shrink-0 border-t border-white/10 p-4">
-          {/* Profile button */}
           <button
             type="button"
             onClick={() => navigate('/studio/profile')}
@@ -138,7 +151,6 @@ export default function SellerDashboard() {
             {sidebarOpen && <span>Profile Settings</span>}
           </button>
 
-          {/* Logout */}
           <button
             type="button"
             onClick={handleLogout}
@@ -167,7 +179,6 @@ export default function SellerDashboard() {
 
       {/* MAIN AREA */}
       <div className={`min-w-0 flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        {/* TOP HEADER */}
         <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
           <div className="flex items-center justify-between gap-6">
             <div className="min-w-0">
@@ -179,25 +190,21 @@ export default function SellerDashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="hidden items-center gap-4 rounded-xl bg-[#103c2d] px-5 py-3 sm:flex">
-                <Clock size={22} className="text-yellow-400" />
-                <div>
-                  <p className="font-mono text-xl font-bold text-yellow-400">
-                    {currentTime.format('HH:mm:ss')}
-                  </p>
-                  <p className="mt-0.5 text-center text-[10px] text-white/60">
-                    {currentTime.format('DD/MM/YYYY')}
-                  </p>
-                </div>
+            <div className="hidden items-center gap-4 rounded-xl bg-[#103c2d] px-5 py-3 sm:flex">
+              <Clock size={22} className="text-yellow-400" />
+              <div>
+                <p className="font-mono text-xl font-bold text-yellow-400">
+                  {currentTime.format('HH:mm:ss')}
+                </p>
+                <p className="mt-0.5 text-center text-[10px] text-white/60">
+                  {currentTime.format('DD/MM/YYYY')}
+                </p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* CONTENT */}
         <main className="p-5 sm:p-8">
-          {/* Page heading */}
           <div className="mb-8">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Studio</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">Business Dashboard</h2>
@@ -215,9 +222,8 @@ export default function SellerDashboard() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Active Listings</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.activeListings}</p>
-                  <p className="mt-2 text-xs text-gray-400">Currently live</p>
+                  <p className="text-sm font-medium text-gray-500">Total Listings</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.totalListings}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
                   <Package size={22} className="text-emerald-700" />
@@ -233,12 +239,11 @@ export default function SellerDashboard() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Reservations</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.totalReservations}</p>
-                  <p className="mt-2 text-xs text-gray-400">All time</p>
+                  <p className="text-sm font-medium text-gray-500">Active Listings</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.activeListings}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
-                  <ShoppingCart size={22} className="text-blue-600" />
+                  <Package size={22} className="text-blue-600" />
                 </div>
               </div>
             </motion.div>
@@ -251,12 +256,11 @@ export default function SellerDashboard() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Views</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.totalViews}</p>
-                  <p className="mt-2 text-xs text-gray-400">Across all listings</p>
+                  <p className="text-sm font-medium text-gray-500">Total Reservations</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.totalReservations}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-50">
-                  <Eye size={22} className="text-yellow-600" />
+                  <ShoppingCart size={22} className="text-yellow-600" />
                 </div>
               </div>
             </motion.div>
@@ -269,12 +273,11 @@ export default function SellerDashboard() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Reviews</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.totalReviews}</p>
-                  <p className="mt-2 text-xs text-gray-400">Customer feedback</p>
+                  <p className="text-sm font-medium text-gray-500">Total Views</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats.totalViews}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50">
-                  <Star size={22} className="text-purple-600" />
+                  <Eye size={22} className="text-purple-600" />
                 </div>
               </div>
             </motion.div>
@@ -282,71 +285,59 @@ export default function SellerDashboard() {
 
           {/* QUICK ACTIONS */}
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            {/* Create listing */}
             <motion.button
               type="button"
               onClick={() => navigate('/studio/listings/create')}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
               className="group rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg"
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 transition-colors group-hover:bg-emerald-100">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
                   <Plus size={22} className="text-emerald-700" />
                 </div>
                 <span className="text-sm font-bold text-emerald-700">Create →</span>
               </div>
               <h3 className="mt-5 text-lg font-black text-gray-900">Create New Listing</h3>
               <p className="mt-2 text-sm leading-6 text-gray-500">
-                Add a new product, property, vehicle or service to your business.
+                Add a new product to your business.
               </p>
             </motion.button>
 
-            {/* View listings */}
             <motion.button
               type="button"
               onClick={() => navigate('/studio/listings')}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.38 }}
               className="group rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg"
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 transition-colors group-hover:bg-blue-100">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
                   <Package size={22} className="text-blue-600" />
                 </div>
                 <span className="text-sm font-bold text-blue-600">View →</span>
               </div>
               <h3 className="mt-5 text-lg font-black text-gray-900">My Listings</h3>
               <p className="mt-2 text-sm leading-6 text-gray-500">
-                Manage your existing listings, edit details and mark as sold.
+                Manage your existing listings.
               </p>
             </motion.button>
 
-            {/* Reservations */}
             <motion.button
               type="button"
               onClick={() => navigate('/studio/reservations')}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.46 }}
               className="group rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-yellow-200 hover:shadow-lg"
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-50 transition-colors group-hover:bg-yellow-100">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-50">
                   <ShoppingCart size={22} className="text-yellow-600" />
                 </div>
                 <span className="text-sm font-bold text-yellow-600">View →</span>
               </div>
               <h3 className="mt-5 text-lg font-black text-gray-900">Reservations</h3>
               <p className="mt-2 text-sm leading-6 text-gray-500">
-                See who reserved your items and contact them directly.
+                See who reserved your items.
               </p>
             </motion.button>
           </div>
 
-          {/* PREMIUM BANNER - visible but not imposed */}
+          {/* PREMIUM BANNER */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}

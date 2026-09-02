@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import ListingDetail from './pages/ListingDetail';
+import SellerCatalogue from './pages/SellerCatalogue';
 
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
@@ -35,7 +36,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<CustomerLayout />} />
+          <Route path="/*" element={<CustomerLayout />} />
 
           <Route path="/control" element={<AdminLogin />} />
           <Route path="/control/dashboard" element={<AdminDashboard />} />
@@ -72,6 +73,7 @@ function CustomerLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/listing/:id" element={<ListingDetail />} />
+          <Route path="/seller/:businessId" element={<SellerCatalogue />} />
         </Routes>
       </main>
       <Footer />

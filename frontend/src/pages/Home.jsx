@@ -1,10 +1,16 @@
+// Import React hooks
 import { useEffect, useState } from 'react';
+// Import motion
 import { motion } from 'framer-motion';
+// Import API
 import { listingApi, categoryApi } from '../services/api';
+// Import components
 import ListingCard from '../components/ListingCard';
 import LoadingScreen from '../components/LoadingScreen';
+// Import icons
 import { MapPin, Flame, Store } from 'lucide-react';
 
+// Home page
 export default function Home() {
   const [featuredListings, setFeaturedListings] = useState([]);
   const [recentListings, setRecentListings] = useState([]);
@@ -47,7 +53,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f8f7f3] text-gray-900">
-      {/* HERO - same as before */}
+      {/* =========================================================
+          HERO
+      ========================================================= */}
       <section className="relative isolate min-h-[560px] overflow-hidden sm:min-h-[620px]">
         <img
           src="/hero.jpg"
@@ -134,27 +142,54 @@ export default function Home() {
         </div>
       </section>
 
-      {/* QUICK STATS */}
+      {/* =========================================================
+          QUICK STATS
+      ========================================================= */}
       <section className="border-b border-gray-200 bg-white">
         <div className="mx-auto grid max-w-7xl grid-cols-3 divide-x divide-gray-200 px-5 py-7 sm:px-8 lg:px-10">
-          <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
+            className="text-center"
+          >
             <p className="text-2xl font-black text-[#103c2d] sm:text-3xl">{recentListings.length}+</p>
             <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">Listings</p>
-          </div>
-          <div className="text-center">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="text-center"
+          >
             <p className="text-2xl font-black text-[#103c2d] sm:text-3xl">{categories.length}</p>
             <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">Categories</p>
-          </div>
-          <div className="text-center">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="text-center"
+          >
             <p className="text-2xl font-black text-[#103c2d] sm:text-3xl">60</p>
             <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">Min reservation</p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* CATEGORIES */}
+      {/* =========================================================
+          CATEGORIES
+      ========================================================= */}
       <section id="categories" className="mx-auto max-w-7xl px-5 pt-16 sm:px-8 lg:px-10">
-        <div className="mb-7 flex items-end justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-7 flex items-end justify-between"
+        >
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">Explore</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
@@ -164,7 +199,7 @@ export default function Home() {
           <a href="/search" className="hidden text-sm font-bold text-emerald-700 transition hover:text-emerald-900 sm:block">
             View all →
           </a>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
           {categories.slice(0, 10).map((category, index) => (
@@ -172,7 +207,8 @@ export default function Home() {
               key={category.id}
               href={`/search?category=${category.id}`}
               initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.35, delay: index * 0.04 }}
               whileHover={{ y: -5 }}
               className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-emerald-200 hover:shadow-lg"
@@ -185,11 +221,24 @@ export default function Home() {
             </motion.a>
           ))}
         </div>
+
+        {categories.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-14 text-center">
+            <p className="font-semibold text-gray-700">No categories available.</p>
+          </div>
+        )}
       </section>
 
-      {/* WHAT'S HOT */}
+      {/* =========================================================
+          WHAT'S HOT
+      ========================================================= */}
       <section className="mx-auto max-w-7xl px-5 pt-20 sm:px-8 lg:px-10">
-        <div className="mb-7 flex items-end justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-7 flex items-end justify-between"
+        >
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-orange-600">Trending now</p>
             <h2 className="mt-2 flex items-center gap-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
@@ -200,12 +249,12 @@ export default function Home() {
           <a href="/search" className="text-sm font-bold text-emerald-700 transition hover:text-emerald-900">
             See everything →
           </a>
-        </div>
+        </motion.div>
 
         {hotListings.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {hotListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+            {hotListings.map((listing, index) => (
+              <ListingCard key={listing.id} listing={listing} index={index} />
             ))}
           </div>
         ) : (
@@ -215,9 +264,16 @@ export default function Home() {
         )}
       </section>
 
-      {/* FEATURED LISTINGS */}
+      {/* =========================================================
+          FEATURED LISTINGS
+      ========================================================= */}
       <section className="mx-auto max-w-7xl px-5 pt-20 sm:px-8 lg:px-10">
-        <div className="mb-7 flex items-end justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-7 flex items-end justify-between"
+        >
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">Handpicked for you</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">Featured listings</h2>
@@ -225,12 +281,12 @@ export default function Home() {
           <a href="/search" className="text-sm font-bold text-emerald-700 transition hover:text-emerald-900">
             See everything →
           </a>
-        </div>
+        </motion.div>
 
         {featuredListings.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+            {featuredListings.map((listing, index) => (
+              <ListingCard key={listing.id} listing={listing} index={index} />
             ))}
           </div>
         ) : (
@@ -240,9 +296,17 @@ export default function Home() {
         )}
       </section>
 
-      {/* RESERVATION BANNER */}
+      {/* =========================================================
+          RESERVATION BANNER
+      ========================================================= */}
       <section className="mx-auto max-w-7xl px-5 pt-20 sm:px-8 lg:px-10">
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#103c2d] px-7 py-12 sm:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-[2rem] bg-[#103c2d] px-7 py-12 sm:px-12"
+        >
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-yellow-400/10 blur-2xl" />
           <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-emerald-400/10 blur-2xl" />
 
@@ -265,12 +329,19 @@ export default function Home() {
               Find something →
             </a>
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* RECENTLY ADDED */}
+      {/* =========================================================
+          RECENTLY ADDED
+      ========================================================= */}
       <section className="mx-auto max-w-7xl px-5 pb-20 pt-20 sm:px-8 lg:px-10">
-        <div className="mb-7 flex items-end justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-7 flex items-end justify-between"
+        >
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">Fresh on the marketplace</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">Recently added</h2>
@@ -278,12 +349,12 @@ export default function Home() {
           <a href="/search" className="text-sm font-bold text-emerald-700 transition hover:text-emerald-900">
             View all →
           </a>
-        </div>
+        </motion.div>
 
         {recentListings.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {recentListings.slice(0, 8).map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+            {recentListings.slice(0, 8).map((listing, index) => (
+              <ListingCard key={listing.id} listing={listing} index={index} />
             ))}
           </div>
         ) : (
@@ -293,40 +364,65 @@ export default function Home() {
         )}
       </section>
 
-      {/* TRUST SECTION */}
+      {/* =========================================================
+          TRUST SECTION
+      ========================================================= */}
       <section className="border-t border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
-          <div className="mb-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-10 text-center"
+          >
             <p className="text-sm font-bold uppercase tracking-widest text-emerald-600">Shop with confidence</p>
             <h2 className="mt-2 text-3xl font-black text-gray-900 sm:text-4xl">
               A marketplace built around you
             </h2>
-          </div>
+          </motion.div>
 
           <div className="grid gap-5 md:grid-cols-3">
-            <div className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md"
+            >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-xl font-bold text-emerald-700">✓</div>
               <h3 className="mt-5 text-lg font-black text-gray-900">Trusted listings</h3>
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 Find listings with useful information and trust signals to help you decide.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md"
+            >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-xl font-bold text-yellow-700">◎</div>
               <h3 className="mt-5 text-lg font-black text-gray-900">Local marketplace</h3>
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 Discover products, property, vehicles and services available around Cameroon.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="rounded-2xl bg-[#f8f7f3] p-7 transition hover:-translate-y-1 hover:shadow-md"
+            >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-xl font-bold text-orange-700">⏱</div>
               <h3 className="mt-5 text-lg font-black text-gray-900">Easy reservations</h3>
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 Found something you want? Reserve it for 60 minutes while you arrange the next step.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>

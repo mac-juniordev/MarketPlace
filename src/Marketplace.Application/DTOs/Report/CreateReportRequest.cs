@@ -1,4 +1,4 @@
-// Import data annotations
+// Import validation
 using System.ComponentModel.DataAnnotations;
 
 namespace Marketplace.Application.DTOs.Report;
@@ -19,4 +19,9 @@ public class CreateReportRequest
     [Required(ErrorMessage = "Reason is required")]
     [MaxLength(500, ErrorMessage = "Reason cannot exceed 500 characters")]
     public string Reason { get; set; } = string.Empty;
+
+    // Reporter contact info for anonymous customers
+    public string? ReporterName { get; set; }
+    public string? ReporterPhone { get; set; }
+    public string? ReporterEmail { get; set; }
 }

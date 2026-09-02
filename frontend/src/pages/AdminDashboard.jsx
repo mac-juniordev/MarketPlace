@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 // Import API
-import { adminApi } from '../services/api';
+import { adminApi, notificationApi } from '../services/api';
 // Import icons
 import {
   LayoutDashboard,
@@ -26,7 +26,6 @@ import {
   X,
   Package,
   ShoppingCart,
-  Building2,
   FileWarning,
 } from 'lucide-react';
 // Import charts
@@ -50,45 +49,15 @@ dayjs.extend(relativeTime);
 // Chart colors
 const COLORS = ['#103c2d', '#16a34a', '#eab308', '#3b82f6', '#ef4444', '#8b5cf6'];
 
-// Notification data
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'seller_action',
-    title: 'New listing created',
-    message: 'Seller "Douala Fashion" created a new listing',
-    time: dayjs().subtract(5, 'minute').toISOString(),
-    read: false,
-  },
-  {
-    id: 2,
-    type: 'seller_action',
-    title: 'New reservation',
-    message: 'Buyer reserved "iPhone 13 Pro"',
-    time: dayjs().subtract(12, 'minute').toISOString(),
-    read: false,
-  },
-  {
-    id: 3,
-    type: 'warning',
-    title: 'Report submitted',
-    message: 'A listing was reported for review',
-    time: dayjs().subtract(1, 'hour').toISOString(),
-    read: false,
-  },
-];
-
 // Admin dashboard page
 export default function AdminDashboard() {
-  // Navigation hooks
   const navigate = useNavigate();
   const location = useLocation();
 
-  // State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentTime, setCurrentTime] = useState(() => dayjs());
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -116,6 +85,26 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await notificationApi.getMyNotifications(false);
+        setNotifications(response.data);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Live clock
   useEffect(() => {
     const interval = setInterval(() => {
@@ -140,16 +129,17 @@ export default function AdminDashboard() {
   };
 
   // Notifications
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const markAsRead = (id) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+    notificationApi.markAsRead(id).catch(() => {});
   };
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   // Navigation
@@ -171,7 +161,6 @@ export default function AdminDashboard() {
           sidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
-        {/* Logo */}
         <div className="flex h-20 shrink-0 items-center border-b border-white/10 px-4">
           {sidebarOpen ? (
             <div className="flex items-center gap-3">
@@ -186,7 +175,6 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-2 overflow-y-auto p-4">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -211,7 +199,6 @@ export default function AdminDashboard() {
           })}
         </nav>
 
-        {/* Sidebar footer */}
         <div className="shrink-0 border-t border-white/10 p-4">
           <button
             type="button"
@@ -332,15 +319,13 @@ export default function AdminDashboard() {
                               type="button"
                               onClick={() => markAsRead(notification.id)}
                               className={`flex w-full items-start gap-3 border-b border-gray-50 p-4 text-left transition-colors hover:bg-gray-50 ${
-                                !notification.read ? 'bg-emerald-50/40' : 'bg-white'
+                                !notification.isRead ? 'bg-emerald-50/40' : 'bg-white'
                               }`}
                             >
-                              <div
-                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                                  notification.type === 'warning' ? 'bg-amber-100' : 'bg-emerald-100'
-                                }`}
-                              >
-                                {notification.type === 'warning' ? (
+                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                                notification.type === 5 || notification.type === 6 ? 'bg-amber-100' : 'bg-emerald-100'
+                              }`}>
+                                {notification.type === 5 || notification.type === 6 ? (
                                   <AlertTriangle size={18} className="text-amber-600" />
                                 ) : (
                                   <Check size={18} className="text-emerald-600" />
@@ -349,11 +334,9 @@ export default function AdminDashboard() {
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-gray-900">{notification.title}</p>
                                 <p className="mt-1 text-sm leading-5 text-gray-500">{notification.message}</p>
-                                <p className="mt-2 text-xs text-gray-400">
-                                  {dayjs(notification.time).fromNow()}
-                                </p>
+                                <p className="mt-2 text-xs text-gray-400">{dayjs(notification.createdAt).fromNow()}</p>
                               </div>
-                              {!notification.read && (
+                              {!notification.isRead && (
                                 <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
                               )}
                             </button>
@@ -370,30 +353,18 @@ export default function AdminDashboard() {
 
         {/* DASHBOARD CONTENT */}
         <main className="p-5 sm:p-8">
-          {/* Page intro */}
           <div className="mb-8">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">Overview</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-gray-900">Marketplace Dashboard</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-              Monitor sellers, listings and reservations from your marketplace administration panel.
-            </p>
           </div>
 
           {/* STAT CARDS */}
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {/* Sellers */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Sellers</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">
-                    {stats?.totalSellers ?? 0}
-                  </p>
-                  <p className="mt-2 text-xs text-gray-400">Registered sellers</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats?.totalSellers ?? 0}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
                   <Users size={22} className="text-emerald-700" />
@@ -401,20 +372,11 @@ export default function AdminDashboard() {
               </div>
             </motion.div>
 
-            {/* Listings */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Listings</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">
-                    {stats?.totalListings ?? 0}
-                  </p>
-                  <p className="mt-2 text-xs text-gray-400">Active listings</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats?.totalListings ?? 0}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
                   <Package size={22} className="text-blue-600" />
@@ -422,20 +384,11 @@ export default function AdminDashboard() {
               </div>
             </motion.div>
 
-            {/* Reservations */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.16 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Active Reservations</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">
-                    {stats?.activeReservations ?? 0}
-                  </p>
-                  <p className="mt-2 text-xs text-gray-400">Currently reserved</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats?.activeReservations ?? 0}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-50">
                   <ShoppingCart size={22} className="text-yellow-600" />
@@ -443,20 +396,11 @@ export default function AdminDashboard() {
               </div>
             </motion.div>
 
-            {/* Pending Reports */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.24 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Pending Reports</p>
-                  <p className="mt-3 text-3xl font-black text-gray-900">
-                    {stats?.pendingReports ?? 0}
-                  </p>
-                  <p className="mt-2 text-xs text-gray-400">Requires review</p>
+                  <p className="mt-3 text-3xl font-black text-gray-900">{stats?.pendingReports ?? 0}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50">
                   <FileWarning size={22} className="text-red-600" />
@@ -467,51 +411,27 @@ export default function AdminDashboard() {
 
           {/* CHARTS */}
           <div className="mt-8 grid gap-5 lg:grid-cols-2">
-            {/* Listings by Category */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-black text-gray-900">Listings by Category</h3>
-              <p className="mt-1 text-sm text-gray-500">Distribution across categories</p>
-
               <div className="mt-6 h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats?.listingsByCategory || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="category" tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#103c2d" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="value" fill="#103c2d" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </motion.div>
 
-            {/* Listings by Type */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.38 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-black text-gray-900">Listings by Type</h3>
-              <p className="mt-1 text-sm text-gray-500">Product, property, vehicle, service</p>
-
               <div className="mt-6 h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={stats?.listingsByType || []}
-                      dataKey="count"
-                      nameKey="type"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={(entry) => entry.type}
-                    >
+                    <Pie data={stats?.listingsByType || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                       {(stats?.listingsByType || []).map((entry, index) => (
                         <Cell key={index} fill={COLORS[index % COLORS.length]} />
                       ))}
@@ -520,73 +440,6 @@ export default function AdminDashboard() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* RECENT ACTIVITY */}
-          <div className="mt-8 grid gap-5 lg:grid-cols-2">
-            {/* Recent Sellers */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.46 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
-              <h3 className="text-lg font-black text-gray-900">Recent Sellers</h3>
-              <p className="mt-1 text-sm text-gray-500">Latest seller registrations</p>
-
-              <div className="mt-4 space-y-3">
-                {(stats?.recentSellers || []).length === 0 ? (
-                  <p className="text-sm text-gray-400 py-8 text-center">No sellers yet</p>
-                ) : (
-                  (stats?.recentSellers || []).map((seller) => (
-                    <div key={seller.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-800">
-                        {(seller.firstName?.charAt(0) || '') + (seller.lastName?.charAt(0) || '')}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-gray-900">
-                          {seller.firstName} {seller.lastName}
-                        </p>
-                        <p className="truncate text-xs text-gray-400">{seller.email}</p>
-                      </div>
-                      <span className="text-xs text-gray-400">{dayjs(seller.createdAt).fromNow()}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-
-            {/* Recent Listings */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.54 }}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
-              <h3 className="text-lg font-black text-gray-900">Recent Listings</h3>
-              <p className="mt-1 text-sm text-gray-500">Latest marketplace listings</p>
-
-              <div className="mt-4 space-y-3">
-                {(stats?.recentListings || []).length === 0 ? (
-                  <p className="text-sm text-gray-400 py-8 text-center">No listings yet</p>
-                ) : (
-                  (stats?.recentListings || []).map((listing) => (
-                    <div key={listing.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                        <Package size={18} className="text-blue-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-gray-900">{listing.title}</p>
-                        <p className="truncate text-xs text-gray-400">{listing.businessName}</p>
-                      </div>
-                      <span className="text-sm font-bold text-emerald-600">
-                        {listing.price.toLocaleString()} XAF
-                      </span>
-                    </div>
-                  ))
-                )}
               </div>
             </motion.div>
           </div>

@@ -1,92 +1,216 @@
-// Import Report DTOs
+// Import DTOs
 using Marketplace.Application.DTOs.Report;
-// Import ReportService
+
+// Import services
 using Marketplace.Application.Services;
-// Import ReportStatus enum
+
+// Import enums
 using Marketplace.Domain.Enums;
-// Import Authorize
+
+// Import authorization
 using Microsoft.AspNetCore.Authorization;
+
 // Import MVC
 using Microsoft.AspNetCore.Mvc;
-// Import ClaimTypes
+
+// Import claims
 using System.Security.Claims;
 
 namespace Marketplace.Api.Controllers;
 
-// API controller
+// ============================================================
+// REPORT CONTROLLER
+// ============================================================
+
 [ApiController]
-// URL prefix /api/reports
 [Route("api/reports")]
 public class ReportController : ControllerBase
 {
-    // Private field
+    // =========================================================
+    // DEPENDENCIES
+    // =========================================================
+
     private readonly ReportService _reportService;
 
-    // Constructor injection
-    public ReportController(ReportService reportService)
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
+    public ReportController(
+        ReportService reportService)
     {
         _reportService = reportService;
     }
 
+    // =========================================================
+    // CREATE REPORT
     // POST /api/reports
+    //
+    // Public endpoint.
+    // Customers can report listings without logging in.
+    // =========================================================
+
     [HttpPost]
-    // Require authentication to report
-    [Authorize]
-    public async Task<IActionResult> Create([FromBody] CreateReportRequest request)
+    [AllowAnonymous]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateReportRequest request)
     {
-        // Get user ID
-        var userId = GetUserId();
+        if (request == null)
+        {
+            return BadRequest(new
+            {
+                message = "Report data is required."
+            });
+        }
 
-        // Create report
-        var result = await _reportService.CreateAsync(userId, request);
+        var userId = GetUserIdOrAnonymous();
 
-        // Return report
+        var result = await _reportService.CreateAsync(
+            userId,
+            request
+        );
+
         return Ok(result);
     }
 
+    // =========================================================
+    // CREATE SELLER REPORT
+    // POST /api/reports/seller
+    //
+    // Sellers and SuperAdmins can submit reports/issues.
+    // =========================================================
+
+    [HttpPost("seller")]
+    [Authorize(Roles = "Seller,SuperAdmin")]
+    public async Task<IActionResult> CreateSellerReport(
+        [FromBody] CreateReportRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new
+            {
+                message = "Report data is required."
+            });
+        }
+
+        var userId = GetUserId();
+
+        var result = await _reportService.CreateAsync(
+            userId,
+            request
+        );
+
+        return Ok(result);
+    }
+
+    // =========================================================
+    // GET PENDING REPORTS
     // GET /api/reports/pending
+    //
+    // Admin and SuperAdmin only.
+    // =========================================================
+
     [HttpGet("pending")]
-    // Only admins can see pending reports
     [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> GetPending()
     {
-        // Fetch pending reports
-        var result = await _reportService.GetPendingAsync();
+        var result =
+            await _reportService.GetPendingAsync();
 
-        // Return list
         return Ok(result);
     }
 
+    // =========================================================
+    // RESOLVE REPORT
     // POST /api/reports/{id}/resolve
-    [HttpPost("{id}/resolve")]
-    // Only admins can resolve reports
-    [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> Resolve(Guid id, [FromBody] ResolveReportRequest request)
-    {
-        // Resolve report
-        var result = await _reportService.ResolveAsync(id, request.Status, request.AdminNotes);
+    //
+    // Admin and SuperAdmin only.
+    // =========================================================
 
-        // Return updated report
+    [HttpPost("{id}/resolve")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> Resolve(
+        Guid id,
+        [FromBody] ResolveReportRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new
+            {
+                message = "Resolution data is required."
+            });
+        }
+
+        var result =
+            await _reportService.ResolveAsync(
+                id,
+                request.Status,
+                request.AdminNotes
+            );
+
         return Ok(result);
     }
 
-    // Private helper
+    // =========================================================
+    // GET AUTHENTICATED USER ID
+    // =========================================================
+
     private Guid GetUserId()
     {
-        // Extract user ID from JWT
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdClaim =
+            User.FindFirst(
+                ClaimTypes.NameIdentifier
+            )?.Value;
 
-        // Convert to Guid
-        return Guid.Parse(userIdClaim!);
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+        {
+            throw new UnauthorizedAccessException(
+                "User ID was not found in the authentication token."
+            );
+        }
+
+        if (!Guid.TryParse(
+                userIdClaim,
+                out var userId))
+        {
+            throw new UnauthorizedAccessException(
+                "Invalid user ID in authentication token."
+            );
+        }
+
+        return userId;
+    }
+
+    // =========================================================
+    // GET USER ID OR ANONYMOUS ID
+    // =========================================================
+
+    private Guid GetUserIdOrAnonymous()
+    {
+        var userIdClaim =
+            User.FindFirst(
+                ClaimTypes.NameIdentifier
+            )?.Value;
+
+        if (!string.IsNullOrWhiteSpace(userIdClaim) &&
+            Guid.TryParse(
+                userIdClaim,
+                out var userId))
+        {
+            return userId;
+        }
+
+        return Guid.NewGuid();
     }
 }
 
-// Request DTO for resolving reports
+// ============================================================
+// RESOLVE REPORT REQUEST DTO
+// ============================================================
+
 public class ResolveReportRequest
 {
-    // The new status
     public ReportStatus Status { get; set; }
 
-    // Optional admin notes
     public string? AdminNotes { get; set; }
 }

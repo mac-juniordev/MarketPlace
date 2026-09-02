@@ -1,7 +1,9 @@
-// Import axios
 import axios from 'axios';
 
-// Create axios instance with base URL
+// ============================================================
+// AXIOS INSTANCE
+// ============================================================
+
 const api = axios.create({
   baseURL: 'http://localhost:5269/api',
   headers: {
@@ -9,98 +11,294 @@ const api = axios.create({
   },
 });
 
-// Add token to every request if it exists
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// ============================================================
+// AUTH TOKEN INTERCEPTOR
+// ============================================================
 
-// Auth API
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ============================================================
+// AUTH API
+// ============================================================
+
 export const authApi = {
-  register: (data) => api.post('/auth/register', data),
-  login: (data) => api.post('/auth/login', data),
+  register: (data) =>
+    api.post('/auth/register', data),
+
+  login: (data) =>
+    api.post('/auth/login', data),
 };
 
-// Listing API
+// ============================================================
+// LISTING API
+// ============================================================
+
 export const listingApi = {
-  getAll: () => api.get('/listings'),
-  getById: (id) => api.get(`/listings/${id}`),
-  search: (query, page, pageSize) => api.get('/listings/search', { params: { query, page, pageSize } }),
-  getFeatured: (count) => api.get('/listings/featured', { params: { count } }),
-  getHot: (count) => api.get('/listings/hot', { params: { count } }),
-  getByCategory: (categoryId) => api.get(`/listings/category/${categoryId}`),
-  getByBusiness: (businessId) => api.get(`/listings/business/${businessId}`),
-  create: (data) => api.post('/listings', data),
-  update: (id, data) => api.put(`/listings/${id}`, data),
-  delete: (id) => api.delete(`/listings/${id}`),
+  // Get all listings
+  getAll: () =>
+    api.get('/listings'),
+
+  // Get listing by ID
+  getById: (id) =>
+    api.get(`/listings/${id}`),
+
+  // Search listings
+  search: (query, page = 1, pageSize = 20) =>
+    api.get('/listings/search', {
+      params: {
+        query,
+        page,
+        pageSize,
+      },
+    }),
+
+  // Featured listings
+  getFeatured: (count = 10) =>
+    api.get('/listings/featured', {
+      params: {
+        count,
+      },
+    }),
+
+  // Hot listings
+  getHot: (count = 8) =>
+    api.get('/listings/hot', {
+      params: {
+        count,
+      },
+    }),
+
+  // Listings by category
+  getByCategory: (categoryId) =>
+    api.get(`/listings/category/${categoryId}`),
+
+  // Listings by business
+  getByBusiness: (businessId) =>
+    api.get(`/listings/business/${businessId}`),
+
+  // Business catalogue
+  getBusinessCatalogue: (businessId) =>
+    api.get(`/listings/business/${businessId}/catalogue`),
+
+  // Seller statistics
+  getSellerStats: () =>
+    api.get('/listings/seller-stats'),
+
+  // Create listing
+  create: (data) =>
+    api.post('/listings', data),
+
+  // Update listing
+  update: (id, data) =>
+    api.put(`/listings/${id}`, data),
+
+  // Delete listing
+  delete: (id) =>
+    api.delete(`/listings/${id}`),
 };
 
-// Category API
+// ============================================================
+// CATEGORY API
+// ============================================================
+
 export const categoryApi = {
-  getAll: () => api.get('/categories'),
-  getById: (id) => api.get(`/categories/${id}`),
-  getBySlug: (slug) => api.get(`/categories/slug/${slug}`),
+  // Get all categories
+  getAll: () =>
+    api.get('/categories'),
+
+  // Get category by ID
+  getById: (id) =>
+    api.get(`/categories/${id}`),
+
+  // Get category by slug
+  getBySlug: (slug) =>
+    api.get(`/categories/slug/${slug}`),
 };
 
-// Business API
+// ============================================================
+// BUSINESS API
+// ============================================================
+
 export const businessApi = {
-  create: (data) => api.post('/businesses', data),
-  getById: (id) => api.get(`/businesses/${id}`),
-  getMyBusinesses: () => api.get('/businesses/my'),
-  update: (id, data) => api.put(`/businesses/${id}`, data),
+  // Create business
+  create: (data) =>
+    api.post('/businesses', data),
+
+  // Get business by ID
+  getById: (id) =>
+    api.get(`/businesses/${id}`),
+
+  // Get current seller's businesses
+  getMyBusinesses: () =>
+    api.get('/businesses/my'),
+
+  // Update business
+  update: (id, data) =>
+    api.put(`/businesses/${id}`, data),
 };
 
-// Reservation API
+// ============================================================
+// RESERVATION API
+// ============================================================
+
 export const reservationApi = {
-  create: (data) => api.post('/reservations', data),
-  getMyReservations: () => api.get('/reservations/my'),
-  getByListing: (listingId) => api.get(`/reservations/listing/${listingId}`),
-  cancel: (id) => api.post(`/reservations/${id}/cancel`),
+  // Create reservation
+  create: (data) =>
+    api.post('/reservations', data),
+
+  // Get current user's reservations
+  getMyReservations: () =>
+    api.get('/reservations/my'),
+
+  // Get reservations for a listing
+  getByListing: (listingId) =>
+    api.get(`/reservations/listing/${listingId}`),
+
+  // Cancel reservation
+  cancel: (id) =>
+    api.post(`/reservations/${id}/cancel`),
+
+  // Complete reservation
+  complete: (id) =>
+    api.post(`/reservations/${id}/complete`),
 };
 
-// Review API
+// ============================================================
+// REVIEW API
+// ============================================================
+
 export const reviewApi = {
-  getByListing: (listingId) => api.get(`/reviews/listing/${listingId}`),
-  getByUser: (userId) => api.get(`/reviews/user/${userId}`),
-  create: (data) => api.post('/reviews', data),
+  // Get reviews for listing
+  getByListing: (listingId) =>
+    api.get(`/reviews/listing/${listingId}`),
+
+  // Get reviews by user
+  getByUser: (userId) =>
+    api.get(`/reviews/user/${userId}`),
+
+  // Create review
+  create: (data) =>
+    api.post('/reviews', data),
 };
 
-// Report API
+// ============================================================
+// REPORT API
+// ============================================================
+
 export const reportApi = {
-  create: (data) => api.post('/reports', data),
+  // Create listing report
+  create: (data) =>
+    api.post('/reports', data),
+
+  // Create seller report
+  createSellerReport: (data) =>
+    api.post('/reports/seller', data),
+
+  // Get pending reports
+  getPending: () =>
+    api.get('/reports/pending'),
+
+  // Resolve report
+  resolve: (id, status = 3, adminNotes = '') =>
+    api.post(`/reports/${id}/resolve`, {
+      status,
+      adminNotes,
+    }),
+
+  // Dismiss report
+  dismiss: (id, adminNotes = '') =>
+    api.post(`/reports/${id}/resolve`, {
+      status: 4,
+      adminNotes,
+    }),
 };
 
-// User API
+// ============================================================
+// USER API
+// ============================================================
+
 export const userApi = {
-  getMe: () => api.get('/users/me'),
-  updateProfile: (data) => api.put('/users/me', data),
+  // Get current user
+  getMe: () =>
+    api.get('/users/me'),
+
+  // Update current user
+  updateProfile: (data) =>
+    api.put('/users/me', data),
 };
 
-// Notification API
+// ============================================================
+// NOTIFICATION API
+// ============================================================
+
 export const notificationApi = {
-  getMyNotifications: (unreadOnly = false) => api.get('/notifications', { params: { unreadOnly } }),
-  markAsRead: (id) => api.post(`/notifications/${id}/read`),
+  // Get notifications
+  getMyNotifications: (unreadOnly = false) =>
+    api.get('/notifications', {
+      params: {
+        unreadOnly,
+      },
+    }),
+
+  // Mark notification as read
+  markAsRead: (id) =>
+    api.post(`/notifications/${id}/read`),
 };
 
-// Admin API
+// ============================================================
+// ADMIN API
+// ============================================================
+
 export const adminApi = {
-  getStats: () => api.get('/admin/stats'),
-  getSellers: () => api.get('/admin/sellers'),
-  createSeller: (data) => api.post('/admin/sellers', data),
-  suspendSeller: (id) => api.post(`/admin/sellers/${id}/suspend`),
-  deleteSeller: (id) => api.delete(`/admin/sellers/${id}`),
+  // Dashboard statistics
+  getStats: () =>
+    api.get('/admin/stats'),
+
+  // Get sellers
+  getSellers: () =>
+    api.get('/admin/sellers'),
+
+  // Create seller
+  createSeller: (data) =>
+    api.post('/admin/sellers', data),
+
+  // Suspend seller
+  suspendSeller: (id) =>
+    api.post(`/admin/sellers/${id}/suspend`),
+
+  // Delete seller
+  deleteSeller: (id) =>
+    api.delete(`/admin/sellers/${id}`),
 };
 
-// Upload API
+// ============================================================
+// UPLOAD API
+// ============================================================
+
 export const uploadApi = {
-  uploadImage: (formData) => api.post('/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  }),
+  // Upload image
+  uploadImage: (formData) =>
+    api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
 };
+
+// ============================================================
+// DEFAULT EXPORT
+// ============================================================
 
 export default api;

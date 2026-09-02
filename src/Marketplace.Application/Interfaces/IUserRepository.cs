@@ -26,4 +26,7 @@ public interface IUserRepository
 
     // Get all role names for a user
     Task<IEnumerable<string>> GetUserRolesAsync(Guid userId);
+
+    // Get all admin users
+    Task<IEnumerable<User>> GetAllAdminsAsync();
 }

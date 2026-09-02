@@ -1,50 +1,49 @@
+// Import common
 using Marketplace.Domain.Common;
+// Import enums
 using Marketplace.Domain.Enums;
 
 namespace Marketplace.Domain.Entities;
 
-// Represents a report submitted against marketplace content or users.
+// Report entity
 public class Report : BaseEntity, IAuditableEntity
 {
-    // ID of the user submitting the report.
+    // User who submitted the report
     public Guid ReporterUserId { get; set; }
 
-    // ID of the reported listing, if applicable.
+    // Optional listing being reported
     public Guid? ReportedListingId { get; set; }
 
-    // ID of the reported business, if applicable.
+    // Optional business being reported
     public Guid? ReportedBusinessId { get; set; }
 
-    // ID of the reported user, if applicable.
+    // Optional user being reported
     public Guid? ReportedUserId { get; set; }
 
-    // Reason for the report.
+    // Reason for the report
     public string Reason { get; set; } = string.Empty;
 
-    // Current report status.
+    // Reporter contact info for anonymous customers
+    public string? ReporterName { get; set; }
+    public string? ReporterPhone { get; set; }
+    public string? ReporterEmail { get; set; }
+
+    // Report status
     public ReportStatus Status { get; set; } = ReportStatus.Pending;
 
-    // Optional notes added by an administrator.
+    // Admin notes
     public string? AdminNotes { get; set; }
 
-    // Date and time when the report was resolved.
+    // When the report was resolved
     public DateTime? ResolvedAt { get; set; }
 
-    // ID of the user who created this record.
+    // Audit fields
     public Guid CreatedBy { get; set; }
-
-    // ID of the user who last updated this record.
     public Guid? UpdatedBy { get; set; }
 
-    // User who submitted the report.
+    // Navigation properties
     public User Reporter { get; set; } = null!;
-
-    // Reported listing, if applicable.
     public Listing? ReportedListing { get; set; }
-
-    // Reported business, if applicable.
     public Business? ReportedBusiness { get; set; }
-
-    // Reported user, if applicable.
     public User? ReportedUser { get; set; }
 }

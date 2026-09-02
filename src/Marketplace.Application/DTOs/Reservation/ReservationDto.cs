@@ -10,4 +10,12 @@ public class ReservationDto
     public ReservationStatus Status { get; set; }
     public DateTime ExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    // Buyer contact information
+    public string? BuyerName { get; set; }
+    public string? BuyerPhone { get; set; }
+    public string? BuyerEmail { get; set; }
+
+    // Listing information
+    public string? ListingTitle { get; set; }
 }
