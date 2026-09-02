@@ -28,19 +28,23 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Register the database context
+// This tells EF Core to use PostgreSQL with our connection string
 builder.Services.AddDbContext<MarketplaceDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configure Hangfire with PostgreSQL storage
+// Jobs are stored in the database and survive application restarts
 builder.Services.AddHangfire(config =>
     config.UsePostgreSqlStorage(options =>
         options.UseNpgsqlConnection(
             builder.Configuration.GetConnectionString("DefaultConnection"))));
 
 // Register Hangfire server
+// This runs the background jobs
 builder.Services.AddHangfireServer();
 
 // Register repositories
+// Each interface is mapped to its implementation
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -91,14 +95,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Configure CORS
+// Allow requests from the React frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy
+            .SetIsOriginAllowed(origin => true)  // Allow all origins in production
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -115,18 +121,12 @@ var app = builder.Build();
 // Use exception handling middleware
 app.UseMiddleware<ExceptionMiddleware>();
 
-// Enable Swagger only in development
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger in all environments for now
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Enable Hangfire dashboard
 app.UseHangfireDashboard();
-
-// Redirect HTTP to HTTPS
-app.UseHttpsRedirection();
 
 // Enable rate limiting
 app.UseIpRateLimiting();
@@ -160,6 +160,10 @@ using (var scope = app.Services.CreateScope())
         () => scope.ServiceProvider.GetRequiredService<ReservationExpiryJob>().ProcessExpiredReservationsAsync(),
         "*/1 * * * *");
 }
+
+// Use port from environment variable (Render sets PORT=8080)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://0.0.0.0:{port}");
 
 // Run the application
 app.Run();
