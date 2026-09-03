@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import ListingDetail from './pages/ListingDetail';
 import SellerCatalogue from './pages/SellerCatalogue';
+import BecomeASeller from './pages/BecomeASeller';
 
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
@@ -74,6 +75,7 @@ function CustomerLayout() {
           <Route path="/search" element={<SearchResults />} />
           <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/seller/:businessId" element={<SellerCatalogue />} />
+          <Route path="/become-a-seller" element={<BecomeASeller />} />
         </Routes>
       </main>
       <Footer />

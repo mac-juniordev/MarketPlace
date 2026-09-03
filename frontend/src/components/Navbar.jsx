@@ -5,15 +5,11 @@ import { Link, useNavigate } from 'react-router-dom';
 // Import motion
 // import { motion } from 'framer-motion';
 
-// Navbar component - sticky top navigation
-// Customer side only. No auth. No register.
+// Navbar component
 export default function Navbar() {
-  // State for search input
   const [searchQuery, setSearchQuery] = useState('');
-  // Navigation hook
   const navigate = useNavigate();
 
-  // Handle search submit
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -27,12 +23,12 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Marketplace" className="w-10 h-10" />
+            <img src="/favicon.svg" alt="Marketplace" className="w-10 h-10" />
             <span className="font-bold text-lg text-gray-900">Marketplace</span>
           </Link>
 
-          {/* Search bar - center */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-8">
+          {/* Search bar */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-8 hidden sm:block">
             <input
               type="text"
               value={searchQuery}
@@ -42,9 +38,15 @@ export default function Navbar() {
             />
           </form>
 
-          {/* Right side - empty for customer */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">
+          {/* Right side */}
+          <div className="flex items-center gap-4">
+            <Link
+              to="/become-a-seller"
+              className="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              Become a Seller
+            </Link>
+            <span className="text-xs text-gray-400 hidden sm:block">
               Cameroon
             </span>
           </div>

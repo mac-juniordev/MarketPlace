@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Marketplace" className="w-8 h-8" />
+              <img src="/favicon.svg" alt="Marketplace" className="w-8 h-8" />
               <span className="font-bold text-white">Marketplace</span>
             </div>
             <p className="mt-4 text-sm">
@@ -18,7 +18,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Links */}
+          {/* Quick Links */}
           <div>
             <h4 className="font-semibold text-white mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
@@ -30,6 +30,11 @@ export default function Footer() {
               <li>
                 <Link to="/search" className="hover:text-white transition-colors">
                   Browse All
+                </Link>
+              </li>
+              <li>
+                <Link to="/become-a-seller" className="hover:text-white transition-colors">
+                  Become a Seller
                 </Link>
               </li>
             </ul>
@@ -44,7 +49,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
         <div className="mt-8 pt-8 border-t border-gray-700 text-center text-sm">
           <p>&copy; {new Date().getFullYear()} Marketplace. All rights reserved.</p>
         </div>
